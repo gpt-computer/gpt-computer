@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
 from gpt_computer.api.models import AgentRunRequest, AgentRunResponse, HealthResponse
@@ -8,6 +9,12 @@ from gpt_computer.core.ai import AI
 from gpt_computer.core.config import get_settings
 
 app = FastAPI(title="GPT Computer API", version="0.1.0")
+
+
+@app.get("/", include_in_schema=False)
+async def root():
+    return RedirectResponse(url="/docs")
+
 
 # Setup a default registry (mock for now, or basic tools)
 registry = ToolRegistry()
