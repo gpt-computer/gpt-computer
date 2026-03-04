@@ -13,6 +13,7 @@ DiskExecutionEnv
 
 Imports
 -------
+- logging: For logging information about the execution.
 - subprocess: For running shell commands.
 - time: For timing the execution of commands.
 - Path: For handling file system paths.
@@ -22,6 +23,7 @@ Imports
 - FilesDict: For handling collections of files.
 """
 
+import logging
 import subprocess
 import time
 
@@ -31,6 +33,8 @@ from typing import Optional, Tuple, Union
 from gpt_computer.core.base_execution_env import BaseExecutionEnv
 from gpt_computer.core.default.file_store import FileStore
 from gpt_computer.core.files_dict import FilesDict
+
+logger = logging.getLogger(__name__)
 
 
 class DiskExecutionEnv(BaseExecutionEnv):
@@ -71,7 +75,7 @@ class DiskExecutionEnv(BaseExecutionEnv):
 
     def run(self, command: str, timeout: Optional[int] = None) -> Tuple[str, str, int]:
         start = time.time()
-        print("\n--- Start of run ---")
+        logger.info("\n--- Start of run ---")
         # while running, also print the stdout and stderr
         p = subprocess.Popen(
             command,
@@ -81,7 +85,7 @@ class DiskExecutionEnv(BaseExecutionEnv):
             text=True,
             shell=True,
         )
-        print("$", command)
+        logger.info("$ %s", command)
         stdout_full, stderr_full = "", ""
 
         try:
@@ -91,21 +95,19 @@ class DiskExecutionEnv(BaseExecutionEnv):
                 stdout = p.stdout.readline()
                 stderr = p.stderr.readline()
                 if stdout:
-                    print(stdout, end="")
+                    logger.debug(stdout.strip())
                     stdout_full += stdout
                 if stderr:
-                    print(stderr, end="")
+                    logger.debug(stderr.strip())
                     stderr_full += stderr
                 if timeout and time.time() - start > timeout:
-                    print("Timeout!")
+                    logger.error("Timeout!")
                     p.kill()
                     raise TimeoutError()
         except KeyboardInterrupt:
-            print()
-            print("Stopping execution.")
-            print("Execution stopped.")
+            logger.info("\nStopping execution.")
+            logger.info("Execution stopped.")
             p.kill()
-            print()
-            print("--- Finished run ---\n")
+            logger.info("\n--- Finished run ---\n")
 
         return stdout_full, stderr_full, p.returncode

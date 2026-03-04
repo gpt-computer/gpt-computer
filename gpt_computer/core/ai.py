@@ -15,6 +15,7 @@ Functions:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -138,7 +139,7 @@ class AI:
 
         logger.debug(f"Using model {self.model_name}")
 
-    def start(self, system: str, user: Any, *, step_name: str) -> List[Message]:
+    async def start(self, system: str, user: Any, *, step_name: str) -> List[Message]:
         """
         Start the conversation with a system message and a user message.
 
@@ -161,7 +162,7 @@ class AI:
             SystemMessage(content=system),
             HumanMessage(content=user),
         ]
-        return self.next(messages, step_name=step_name)
+        return await self.next(messages, step_name=step_name)
 
     def _extract_content(self, content):
         """
@@ -224,7 +225,7 @@ class AI:
         collapsed_messages.append(previous_message.__class__(content=combined_content))
         return collapsed_messages
 
-    def next(
+    async def next(
         self,
         messages: List[Message],
         prompt: Optional[str] = None,
@@ -261,7 +262,7 @@ class AI:
         if not self.vision:
             messages = self._collapse_text_messages(messages)
 
-        response = self.backoff_inference(messages)
+        response = await self.backoff_inference(messages)
 
         self.token_usage_log.update_log(
             messages=messages, answer=response.content, step_name=step_name
@@ -272,7 +273,7 @@ class AI:
         return messages
 
     @backoff.on_exception(backoff.expo, openai.RateLimitError, max_tries=7, max_time=45)
-    def backoff_inference(self, messages):
+    async def backoff_inference(self, messages):
         """
         Perform inference using the language model while implementing an exponential backoff strategy.
 
@@ -303,9 +304,9 @@ class AI:
         Example
         -------
         >>> messages = [SystemMessage(content="Hello"), HumanMessage(content="How's the weather?")]
-        >>> response = backoff_inference(messages)
+        >>> response = await backoff_inference(messages)
         """
-        return self.llm.invoke(messages)  # type: ignore
+        return await self.llm.ainvoke(messages)  # type: ignore
 
     @staticmethod
     def serialize_messages(messages: List[Message]) -> str:
@@ -471,7 +472,7 @@ class ClipboardAI(AI):
             content.append(line)
         return "\n".join(content)
 
-    def next(
+    async def next(
         self,
         messages: List[Message],
         prompt: Optional[str] = None,
@@ -495,7 +496,9 @@ class ClipboardAI(AI):
             "characters in total",
         )
 
-        response = self.multiline_input()
+        # Since input() is blocking, we should run it in an executor to avoid blocking the event loop
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(None, self.multiline_input)
 
         messages.append(AIMessage(content=response))
         logger.debug(f"Chat completion finished: {messages}")
