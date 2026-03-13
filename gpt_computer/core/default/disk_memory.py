@@ -26,7 +26,7 @@ import shutil
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterator, Optional, Union
+from typing import Any, Dict, Iterator, List, Optional, Union
 
 from gpt_computer.core.base_memory import BaseMemory
 from gpt_computer.tools.supported_languages import SUPPORTED_LANGUAGES
@@ -57,9 +57,21 @@ class DiskMemory(BaseMemory):
             The path to the directory where the database files will be stored.
 
         """
-        self.path: Path = Path(path).absolute()
+        self._path: Path = Path(path).absolute()
+        self._path.mkdir(parents=True, exist_ok=True)
+        self._vector_store = None
 
-        self.path.mkdir(parents=True, exist_ok=True)
+    @property
+    def path(self) -> Path:
+        return self._path
+
+    @property
+    def vector_store(self):
+        if self._vector_store is None:
+            from gpt_computer.core.memory.vector_store import VectorStore
+
+            self._vector_store = VectorStore(self.path)
+        return self._vector_store
 
     def __contains__(self, key: str) -> bool:
         """
@@ -319,8 +331,14 @@ class DiskMemory(BaseMemory):
         """
         Moves all logs to archive directory based on current timestamp
         """
-        if "logs" in self:
+        if (self.path / "logs").is_dir():
             archive_dir = (
                 self.path / f"logs_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
             )
             shutil.move(self.path / "logs", archive_dir)
+
+    def index(self, texts: List[str], metadatas: List[Dict[str, Any]]):
+        self.vector_store.add_texts(texts, metadatas)
+
+    def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+        return self.vector_store.search(query, top_k)
