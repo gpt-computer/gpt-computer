@@ -4,7 +4,7 @@ using an AI model. It includes functionalities to initialize code generation, im
 and process the code through various steps defined in the step bundle.
 """
 
-from typing import Callable, Optional, TypeVar
+from typing import Any, Callable, Coroutine, Optional, TypeVar
 
 # from gpt_computer.core.default.git_version_manager import GitVersionManager
 from gpt_computer.core.ai import AI
@@ -24,12 +24,22 @@ from gpt_computer.core.files_dict import FilesDict
 from gpt_computer.core.preprompts_holder import PrepromptsHolder
 from gpt_computer.core.prompt import Prompt
 
-CodeGenType = TypeVar("CodeGenType", bound=Callable[[AI, str, BaseMemory], FilesDict])
+CodeGenType = TypeVar(
+    "CodeGenType",
+    bound=Callable[
+        [AI, str, BaseMemory, PrepromptsHolder], Coroutine[Any, Any, FilesDict]
+    ],
+)
 CodeProcessor = TypeVar(
-    "CodeProcessor", bound=Callable[[AI, BaseExecutionEnv, FilesDict], FilesDict]
+    "CodeProcessor",
+    bound=Callable[[AI, BaseExecutionEnv, FilesDict], Coroutine[Any, Any, FilesDict]],
 )
 ImproveType = TypeVar(
-    "ImproveType", bound=Callable[[AI, str, FilesDict, BaseMemory], FilesDict]
+    "ImproveType",
+    bound=Callable[
+        [AI, str, FilesDict, BaseMemory, PrepromptsHolder],
+        Coroutine[Any, Any, FilesDict],
+    ],
 )
 
 
@@ -149,7 +159,7 @@ class CliAgent(BaseAgent):
             preprompts_holder=preprompts_holder or PrepromptsHolder(PREPROMPTS_PATH),
         )
 
-    def init(self, prompt: Prompt) -> FilesDict:
+    async def init(self, prompt: Prompt) -> FilesDict:
         """
         Generates a new piece of code using the AI and step bundle based on the provided prompt.
 
@@ -164,15 +174,15 @@ class CliAgent(BaseAgent):
             An instance of the `FilesDict` class containing the generated code.
         """
 
-        files_dict = self.code_gen_fn(
+        files_dict = await self.code_gen_fn(
             self.ai, prompt, self.memory, self.preprompts_holder
         )
-        entrypoint = gen_entrypoint(
+        entrypoint = await gen_entrypoint(
             self.ai, prompt, files_dict, self.memory, self.preprompts_holder
         )
         combined_dict = {**files_dict, **entrypoint}
         files_dict = FilesDict(combined_dict)
-        files_dict = self.process_code_fn(
+        files_dict = await self.process_code_fn(
             self.ai,
             self.execution_env,
             files_dict,
@@ -182,7 +192,7 @@ class CliAgent(BaseAgent):
         )
         return files_dict
 
-    def improve(
+    async def improve(
         self,
         files_dict: FilesDict,
         prompt: Prompt,
@@ -207,7 +217,7 @@ class CliAgent(BaseAgent):
             An instance of the `FilesDict` class containing the improved code.
         """
 
-        files_dict = self.improve_fn(
+        files_dict = await self.improve_fn(
             self.ai,
             prompt,
             files_dict,
@@ -215,12 +225,12 @@ class CliAgent(BaseAgent):
             self.preprompts_holder,
             diff_timeout=diff_timeout,
         )
-        # entrypoint = gen_entrypoint(
+        # entrypoint = await gen_entrypoint(
         #     self.ai, prompt, files_dict, self.memory, self.preprompts_holder
         # )
         # combined_dict = {**files_dict, **entrypoint}
         # files_dict = FilesDict(combined_dict)
-        # files_dict = self.process_code_fn(
+        # files_dict = await self.process_code_fn(
         #     self.ai,
         #     self.execution_env,
         #     files_dict,
