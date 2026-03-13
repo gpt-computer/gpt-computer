@@ -23,9 +23,9 @@ class BaseAgent(ABC):
     """
 
     @abstractmethod
-    def init(self, prompt: Prompt) -> FilesDict:
+    async def init(self, prompt: Prompt) -> FilesDict:
         pass
 
     @abstractmethod
-    def improve(self, files_dict: FilesDict, prompt: Prompt) -> FilesDict:
+    async def improve(self, files_dict: FilesDict, prompt: Prompt) -> FilesDict:
         pass

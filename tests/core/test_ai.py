@@ -1,51 +1,67 @@
-from langchain.chat_models.base import BaseChatModel
+import pytest
+
 from langchain_community.chat_models.fake import FakeListChatModel
+from langchain_core.language_models.chat_models import BaseChatModel
 
 from gpt_computer.core.ai import AI
 
 
+class AsyncFakeListChatModel(FakeListChatModel):
+    async def ainvoke(self, *args, **kwargs):
+        return self.invoke(*args, **kwargs)
+
+
 def mock_create_chat_model(self) -> BaseChatModel:
-    return FakeListChatModel(responses=["response1", "response2", "response3"])
+    return AsyncFakeListChatModel(responses=["response1", "response2", "response3"])
 
 
-def test_start(monkeypatch):
+@pytest.mark.asyncio
+async def test_start(monkeypatch):
     monkeypatch.setattr(AI, "_create_chat_model", mock_create_chat_model)
 
     ai = AI("gpt-4")
 
     # act
-    response_messages = ai.start("system prompt", "user prompt", step_name="step name")
+    response_messages = await ai.start(
+        "system prompt", "user prompt", step_name="test_start"
+    )
 
     # assert
     assert response_messages[-1].content == "response1"
 
 
-def test_next(monkeypatch):
+@pytest.mark.asyncio
+async def test_next(monkeypatch):
     # arrange
     monkeypatch.setattr(AI, "_create_chat_model", mock_create_chat_model)
 
     ai = AI("gpt-4")
-    response_messages = ai.start("system prompt", "user prompt", step_name="step name")
+    response_messages = await ai.start(
+        "system prompt", "user prompt", step_name="test_next"
+    )
 
     # act
-    response_messages = ai.next(
-        response_messages, "next user prompt", step_name="step name"
+    response_messages = await ai.next(
+        response_messages, "next user prompt", step_name="test_next"
     )
 
     # assert
     assert response_messages[-1].content == "response2"
 
 
-def test_token_logging(monkeypatch):
+@pytest.mark.asyncio
+async def test_token_logging(monkeypatch):
     # arrange
     monkeypatch.setattr(AI, "_create_chat_model", mock_create_chat_model)
 
     ai = AI("gpt-4")
 
     # act
-    response_messages = ai.start("system prompt", "user prompt", step_name="step name")
+    response_messages = await ai.start(
+        "system prompt", "user prompt", step_name="test_token_logging"
+    )
     usageCostAfterStart = ai.token_usage_log.usage_cost()
-    ai.next(response_messages, "next user prompt", step_name="step name")
+    await ai.next(response_messages, "next user prompt", step_name="test_token_logging")
     usageCostAfterNext = ai.token_usage_log.usage_cost()
 
     # assert
@@ -64,12 +80,6 @@ def test_base_url_support(monkeypatch):
 
     # Mock the import in the ai module
     monkeypatch.setattr("gpt_computer.core.ai.ChatOpenAI", MockChatOpenAI)
-    # Also need to mock _create_chat_model if it's called in __init__,
-    # but wait, existing tests mock AI._create_chat_model which BYPASSES the logic I want to test.
-    # So I must NOT mock AI._create_chat_model, but rely on mocking ChatOpenAI instead.
-
-    # However, create_chat_model is called in __init__. So if I mock ChatOpenAI,
-    # AI(...) will call _create_chat_model -> MockChatOpenAI(...)
 
     ai = AI(base_url="http://localhost:11434/v1")
 
@@ -91,12 +101,6 @@ def test_gemini_support(monkeypatch):
     monkeypatch.setattr(
         "gpt_computer.core.ai.ChatGoogleGenerativeAI", MockChatGoogleGenerativeAI
     )
-    # Ensure it's not None (since we have try-except block in ai.py)
-    # We might need to monkeypatch the module level variable if it was imported as None
-    # effectively we need to make sure the runtime sees our Mock class.
-
-    # Since the import happens at top level, if it failed, ChatGoogleGenerativeAI is None.
-    # Monkeypatching 'gpt_computer.core.ai.ChatGoogleGenerativeAI' should work if we do it right.
 
     AI(model_name="gemini-1.5-pro")
 
