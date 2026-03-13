@@ -25,6 +25,7 @@ Notes
 - When using the `azure_endpoint` parameter, provide the Azure OpenAI service endpoint URL.
 """
 
+import asyncio
 import difflib
 import json
 import logging
@@ -35,10 +36,8 @@ import sys
 
 from pathlib import Path
 
-import openai
 import typer
 
-from dotenv import load_dotenv
 from langchain.globals import set_llm_cache
 from langchain_community.cache import SQLiteCache
 from termcolor import colored
@@ -47,6 +46,7 @@ from gpt_computer.applications.cli.cli_agent import CliAgent
 from gpt_computer.applications.cli.collect import collect_and_send_human_review
 from gpt_computer.applications.cli.file_selector import FileSelector
 from gpt_computer.core.ai import AI, ClipboardAI
+from gpt_computer.core.config import get_settings
 from gpt_computer.core.default.disk_execution_env import DiskExecutionEnv
 from gpt_computer.core.default.disk_memory import DiskMemory
 from gpt_computer.core.default.file_store import FileStore
@@ -59,6 +59,7 @@ from gpt_computer.core.default.steps import (
 )
 from gpt_computer.core.files_dict import FilesDict
 from gpt_computer.core.git import stage_uncommitted_to_git
+from gpt_computer.core.logging_config import setup_logging
 from gpt_computer.core.preprompts_holder import PrepromptsHolder
 from gpt_computer.core.prompt import Prompt
 from gpt_computer.tools.custom_steps import clarified_gen, lite_gen, self_heal
@@ -67,27 +68,7 @@ app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]}
 )  # creates a CLI app
 
-
-def load_env_if_needed():
-    """
-    Load environment variables if the OPENAI_API_KEY is not already set.
-
-    This function checks if the OPENAI_API_KEY environment variable is set,
-    and if not, it attempts to load it from a .env file in the current working
-    directory. It then sets the openai.api_key for use in the application.
-    """
-    # We have all these checks for legacy reasons...
-    if os.getenv("OPENAI_API_KEY") is None:
-        load_dotenv()
-    if os.getenv("OPENAI_API_KEY") is None:
-        load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))
-
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-
-    if os.getenv("ANTHROPIC_API_KEY") is None:
-        load_dotenv()
-    if os.getenv("ANTHROPIC_API_KEY") is None:
-        load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))
+logger = logging.getLogger(__name__)
 
 
 def concatenate_paths(base_path, sub_path):
@@ -102,7 +83,7 @@ def concatenate_paths(base_path, sub_path):
     return os.path.normpath(os.path.join(base_path, sub_path))
 
 
-def load_prompt(
+async def load_prompt(
     input_repo: DiskMemory,
     improve_mode: bool,
     prompt_file: str,
@@ -131,15 +112,20 @@ def load_prompt(
         )
     prompt_str = input_repo.get(prompt_file)
     if prompt_str:
-        print(colored("Using prompt from file:", "green"), prompt_file)
-        print(prompt_str)
+        typer.echo(colored("Using prompt from file: ", "green") + prompt_file)
+        typer.echo(prompt_str)
     else:
+        loop = asyncio.get_event_loop()
         if not improve_mode:
-            prompt_str = input(
-                "\nWhat application do you want gpt-computer to generate?\n"
+            prompt_str = await loop.run_in_executor(
+                None,
+                input,
+                "\nWhat application do you want gpt-computer to generate?\n",
             )
         else:
-            prompt_str = input("\nHow do you want to improve the application?\n")
+            prompt_str = await loop.run_in_executor(
+                None, input, "\nHow do you want to improve the application?\n"
+            )
 
     if entrypoint_prompt_file == "":
         entrypoint_prompt = ""
@@ -225,19 +211,21 @@ def compare(f1: FilesDict, f2: FilesDict):
     for file in sorted(set(f1) | set(f2)):
         diff = colored_diff(f1.get(file, ""), f2.get(file, ""))
         if diff:
-            print(f"Changes to {file}:")
-            print(diff)
+            typer.echo(f"Changes to {file}:")
+            typer.echo(diff)
 
 
-def prompt_yesno() -> bool:
+async def prompt_yesno() -> bool:
     TERM_CHOICES = colored("y", "green") + "/" + colored("n", "red") + " "
+    loop = asyncio.get_event_loop()
     while True:
-        response = input(TERM_CHOICES).strip().lower()
+        response = await loop.run_in_executor(None, input, TERM_CHOICES)
+        response = response.strip().lower()
         if response in ["y", "yes"]:
             return True
         if response in ["n", "no"]:
             break
-        print("Please respond with 'y' or 'n'")
+        typer.echo("Please respond with 'y' or 'n'")
 
 
 def get_system_info():
@@ -387,62 +375,76 @@ def main(
 ):
     """
     The main entry point for the CLI tool that generates or improves a project.
-
-    This function sets up the CLI tool, loads environment variables, initializes
-    the AI, and processes the user's request to generate or improve a project
-    based on the provided arguments.
-
-    Parameters
-    ----------
-    project_path : str
-        The file path to the project directory.
-    model : str
-        The model ID string for the AI.
-    temperature : float
-        The temperature setting for the AI's responses.
-    improve_mode : bool
-        Flag indicating whether to improve an existing project.
-    lite_mode : bool
-        Flag indicating whether to run in lite mode.
-    clarify_mode : bool
-        Flag indicating whether to discuss specifications with AI before implementation.
-    self_heal_mode : bool
-        Flag indicating whether to enable self-healing mode.
-    azure_endpoint : str
-        The endpoint for Azure OpenAI services.
-    use_custom_preprompts : bool
-        Flag indicating whether to use custom preprompts.
-    prompt_file : str
-        Relative path to a text file containing a prompt.
-    entrypoint_prompt_file: str
-        Relative path to a text file containing a file that specifies requirements for you entrypoint.
-    image_directory: str
-        Relative path to a folder containing images.
-    use_cache: bool
-        Speeds up computations and saves tokens when running the same prompt multiple times by caching the LLM response.
-    verbose : bool
-        Flag indicating whether to enable verbose logging.
-    skip_file_selection: bool
-        Skip interactive file selection in improve mode and use the generated TOML file directly
-    no_execution: bool
-        Run setup but to not call LLM or write any code. For testing purposes.
-    sysinfo: bool
-        Flag indicating whether to output system information for debugging.
-
-    Returns
-    -------
-    None
     """
+    asyncio.run(
+        _main(
+            project_path,
+            model,
+            temperature,
+            improve_mode,
+            lite_mode,
+            clarify_mode,
+            self_heal_mode,
+            azure_endpoint,
+            base_url,
+            use_custom_preprompts,
+            llm_via_clipboard,
+            verbose,
+            debug,
+            prompt_file,
+            entrypoint_prompt_file,
+            image_directory,
+            use_cache,
+            skip_file_selection,
+            no_execution,
+            sysinfo,
+            diff_timeout,
+        )
+    )
 
+
+async def _main(
+    project_path: str,
+    model: str,
+    temperature: float,
+    improve_mode: bool,
+    lite_mode: bool,
+    clarify_mode: bool,
+    self_heal_mode: bool,
+    azure_endpoint: str,
+    base_url: str,
+    use_custom_preprompts: bool,
+    llm_via_clipboard: bool,
+    verbose: bool,
+    debug: bool,
+    prompt_file: str,
+    entrypoint_prompt_file: str,
+    image_directory: str,
+    use_cache: bool,
+    skip_file_selection: bool,
+    no_execution: bool,
+    sysinfo: bool,
+    diff_timeout: int,
+):
     if debug:
         import pdb
 
         sys.excepthook = lambda *_: pdb.pm()
 
+    settings = get_settings()
+
+    # Override settings with CLI options if provided
+    if model != "gpt-4o":
+        settings.model_name = model
+    if temperature != 0.1:
+        settings.temperature = temperature
+    settings.verbose = verbose
+    settings.debug = debug
+
     if sysinfo:
         sys_info = get_system_info()
         for key, value in sys_info.items():
-            print(f"{key}: {value}")
+            typer.echo(f"{key}: {value}")
         raise typer.Exit()
 
     # Validate arguments
@@ -450,8 +452,6 @@ def main(
         typer.echo("Error: Clarify and lite mode are not compatible with improve mode.")
         raise typer.Exit(code=1)
 
-    # Set up logging
-    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
     if use_cache:
         set_llm_cache(SQLiteCache(database_path=".langchain.db"))
     if improve_mode:
@@ -459,22 +459,20 @@ def main(
             clarify_mode or lite_mode
         ), "Clarify and lite mode are not active for improve mode"
 
-    load_env_if_needed()
-
     if llm_via_clipboard:
         ai = ClipboardAI()
     else:
         ai = AI(
-            model_name=model,
-            temperature=temperature,
-            azure_endpoint=azure_endpoint,
+            model_name=settings.model_name,
+            temperature=settings.temperature,
+            azure_endpoint=azure_endpoint or settings.azure_openai_endpoint,
             base_url=base_url,
         )
 
     path = Path(project_path)
-    print("Running gpt-computer in", path.absolute(), "\n")
+    typer.echo(f"Running gpt-computer in {path.absolute()}\n")
 
-    prompt = load_prompt(
+    prompt = await load_prompt(
         DiskMemory(path),
         improve_mode,
         prompt_file,
@@ -507,6 +505,9 @@ def main(
     memory = DiskMemory(memory_path(project_path))
     memory.archive_logs()
 
+    # Set up logging after memory is ready
+    setup_logging(verbose=verbose, memory=memory)
+
     execution_env = DiskExecutionEnv()
     agent = CliAgent.with_default_config(
         memory,
@@ -529,25 +530,27 @@ def main(
             if is_linting:
                 files_dict_before = files.linting(files_dict_before)
 
-            files_dict = handle_improve_mode(
+            files_dict = await handle_improve_mode(
                 prompt, agent, memory, files_dict_before, diff_timeout=diff_timeout
             )
             if not files_dict or files_dict_before == files_dict:
-                print(
+                typer.echo(
                     f"No changes applied. Could you please upload the debug_log_file.txt in {memory.path}/logs folder in a github issue?"
                 )
 
             else:
-                print("\nChanges to be made:")
+                typer.echo("\nChanges to be made:")
                 compare(files_dict_before, files_dict)
 
-                print()
-                print(colored("Do you want to apply these changes?", "light_green"))
-                if not prompt_yesno():
+                typer.echo()
+                typer.echo(
+                    colored("Do you want to apply these changes?", "light_green")
+                )
+                if not await prompt_yesno():
                     files_dict = files_dict_before
 
         else:
-            files_dict = agent.init(prompt)
+            files_dict = await agent.init(prompt)
             # collect user feedback if user consents
             config = (code_gen_fn.__name__, execution_fn.__name__)
             collect_and_send_human_review(prompt, model, temperature, config, memory)
@@ -557,11 +560,11 @@ def main(
         files.push(files_dict)
 
     if ai.token_usage_log.is_openai_model():
-        print("Total api cost: $ ", ai.token_usage_log.usage_cost())
+        typer.echo(f"Total api cost: $ {ai.token_usage_log.usage_cost()}")
     elif os.getenv("LOCAL_MODEL"):
-        print("Total api cost: $ 0.0 since we are using local LLM.")
+        typer.echo("Total api cost: $ 0.0 since we are using local LLM.")
     else:
-        print("Total tokens used: ", ai.token_usage_log.total_tokens())
+        typer.echo(f"Total tokens used: {ai.token_usage_log.total_tokens()}")
 
 
 @app.command(help="List all available projects in the projects/ folder.")
@@ -571,13 +574,13 @@ def list():
     """
     projects_dir = Path("projects")
     if not projects_dir.exists() or not projects_dir.is_dir():
-        print(colored("No projects directory found.", "red"))
+        typer.echo(colored("No projects directory found.", "red"))
         return
 
-    print(colored("Available projects:", "cyan"))
+    typer.echo(colored("Available projects:", "cyan"))
     for item in sorted(projects_dir.iterdir()):
         if item.is_dir() and (item / "prompt").exists():
-            print(f"  - {item.name}")
+            typer.echo(f"  - {item.name}")
 
 
 if __name__ == "__main__":

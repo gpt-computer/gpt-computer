@@ -30,14 +30,18 @@ improve : function
     Improves the code based on user input and returns the updated files.
 """
 
+import asyncio
 import inspect
 import io
+import logging
 import re
 import sys
 import traceback
 
 from pathlib import Path
 from typing import List, MutableMapping, Union
+
+import typer
 
 from langchain.schema import HumanMessage, SystemMessage
 from termcolor import colored
@@ -58,6 +62,8 @@ from gpt_computer.core.default.paths import (
 from gpt_computer.core.files_dict import FilesDict, file_to_lines_dict
 from gpt_computer.core.preprompts_holder import PrepromptsHolder
 from gpt_computer.core.prompt import Prompt
+
+logger = logging.getLogger(__name__)
 
 
 def curr_fn() -> str:
@@ -118,7 +124,7 @@ def setup_sys_prompt_existing_code(
     )
 
 
-def gen_code(
+async def gen_code(
     ai: AI, prompt: Prompt, memory: BaseMemory, preprompts_holder: PrepromptsHolder
 ) -> FilesDict:
     """
@@ -141,7 +147,7 @@ def gen_code(
         A dictionary of file names to their respective source code content.
     """
     preprompts = preprompts_holder.get_preprompts()
-    messages = ai.start(
+    messages = await ai.start(
         setup_sys_prompt(preprompts), prompt.to_langchain_content(), step_name=curr_fn()
     )
     chat = messages[-1].content.strip()
@@ -150,7 +156,7 @@ def gen_code(
     return files_dict
 
 
-def gen_entrypoint(
+async def gen_entrypoint(
     ai: AI,
     prompt: Prompt,
     files_dict: FilesDict,
@@ -184,14 +190,13 @@ def gen_entrypoint(
         b) runs all necessary parts of the codebase (in parallel if necessary)
         """
     preprompts = preprompts_holder.get_preprompts()
-    messages = ai.start(
+    messages = await ai.start(
         system=(preprompts["entrypoint"]),
         user=user_prompt
         + "\nInformation about the codebase:\n\n"
         + files_dict.to_chat(),
         step_name=curr_fn(),
     )
-    print()
     chat = messages[-1].content.strip()
     regex = r"```\S*\n(.+?)```"
     matches = re.finditer(regex, chat, re.DOTALL)
@@ -202,7 +207,7 @@ def gen_entrypoint(
     return entrypoint_code
 
 
-def execute_entrypoint(
+async def execute_entrypoint(
     ai: AI,
     execution_env: BaseExecutionEnv,
     files_dict: FilesDict,
@@ -238,37 +243,41 @@ def execute_entrypoint(
 
     command = files_dict[ENTRYPOINT_FILE]
 
-    print()
-    print(
+    typer.echo()
+    typer.echo(
         colored(
             "Do you want to execute this code? (Y/n)",
             "red",
         )
     )
-    print()
-    print(command)
-    print()
-    if input("").lower() not in ["", "y", "yes"]:
-        print("Ok, not executing the code.")
+    typer.echo()
+    typer.echo(command)
+    typer.echo()
+
+    loop = asyncio.get_event_loop()
+    user_input = await loop.run_in_executor(None, input, "")
+
+    if user_input.lower() not in ["", "y", "yes"]:
+        typer.echo("Ok, not executing the code.")
         return files_dict
-    print("Executing the code...")
-    print()
-    print(
+    typer.echo("Executing the code...")
+    typer.echo()
+    typer.echo(
         colored(
             "Note: If it does not work as expected, consider running the code"
             + " in another way than above.",
             "green",
         )
     )
-    print()
-    print("You can press ctrl+c *once* to stop the execution.")
-    print()
+    typer.echo()
+    typer.echo("You can press ctrl+c *once* to stop the execution.")
+    typer.echo()
 
     execution_env.upload(files_dict).run(f"bash {ENTRYPOINT_FILE}")
     return files_dict
 
 
-def improve_fn(
+async def improve_fn(
     ai: AI,
     prompt: Prompt,
     files_dict: FilesDict,
@@ -309,13 +318,15 @@ def improve_fn(
         DEBUG_LOG_FILE,
         "UPLOADED FILES:\n" + files_dict.to_log() + "\nPROMPT:\n" + prompt.text,
     )
-    return _improve_loop(ai, files_dict, memory, messages, diff_timeout=diff_timeout)
+    return await _improve_loop(
+        ai, files_dict, memory, messages, diff_timeout=diff_timeout
+    )
 
 
-def _improve_loop(
+async def _improve_loop(
     ai: AI, files_dict: FilesDict, memory: BaseMemory, messages: List, diff_timeout=3
 ) -> FilesDict:
-    messages = ai.next(messages, step_name=curr_fn())
+    messages = await ai.next(messages, step_name=curr_fn())
     files_dict, errors = salvage_correct_hunks(
         messages, files_dict, memory, diff_timeout=diff_timeout
     )
@@ -329,7 +340,7 @@ def _improve_loop(
                 + "\n Only rewrite the problematic diffs, making sure that the failing ones are now on the correct format and can be found in the code. Make sure to not repeat past mistakes. \n"
             )
         )
-        messages = ai.next(messages, step_name=curr_fn())
+        messages = await ai.next(messages, step_name=curr_fn())
         files_dict, errors = salvage_correct_hunks(
             messages, files_dict, memory, diff_timeout
         )
@@ -381,15 +392,15 @@ class Tee(object):
             file.flush()
 
 
-def handle_improve_mode(prompt, agent, memory, files_dict, diff_timeout=3):
+async def handle_improve_mode(prompt, agent, memory, files_dict, diff_timeout=3):
     captured_output = io.StringIO()
     old_stdout = sys.stdout
     sys.stdout = Tee(sys.stdout, captured_output)
 
     try:
-        files_dict = agent.improve(files_dict, prompt, diff_timeout=diff_timeout)
+        files_dict = await agent.improve(files_dict, prompt, diff_timeout=diff_timeout)
     except Exception as e:
-        print(
+        logger.error(
             f"Error while improving the project: {e}\nCould you please upload the debug_log_file.txt in {memory.path}/logs folder to github?\nFULL STACK TRACE:\n"
         )
         traceback.print_exc(file=sys.stdout)  # Print the full stack trace
@@ -399,7 +410,6 @@ def handle_improve_mode(prompt, agent, memory, files_dict, diff_timeout=3):
 
         # Get the captured output
         captured_string = captured_output.getvalue()
-        print(captured_string)
-        memory.log(DEBUG_LOG_FILE, "\nCONSOLE OUTPUT:\n" + captured_string)
+        logger.debug("\nCONSOLE OUTPUT:\n" + captured_string)
 
     return files_dict

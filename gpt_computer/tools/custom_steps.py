@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from platform import platform
@@ -42,7 +43,7 @@ def get_platform_info() -> str:
 logger = logging.getLogger(__name__)
 
 
-def self_heal(
+async def self_heal(
     ai: AI,
     execution_env: BaseExecutionEnv,
     files_dict: FilesDict,
@@ -64,6 +65,8 @@ def self_heal(
     if preprompts_holder is None:
         raise AssertionError("Prepromptsholder required for self-heal")
 
+    loop = asyncio.get_event_loop()
+
     while attempts < MAX_SELF_HEAL_ATTEMPTS:
         attempts += 1
         logger.info(f"Self-healing attempt {attempts}/{MAX_SELF_HEAL_ATTEMPTS}")
@@ -73,7 +76,7 @@ def self_heal(
         p = execution_env.popen(files_dict[ENTRYPOINT_FILE])
 
         # Wait for the process to complete and get output
-        stdout_bytes, stderr_bytes = p.communicate()
+        stdout_bytes, stderr_bytes = await loop.run_in_executor(None, p.communicate)
         stdout_full = stdout_bytes.decode("utf-8", errors="replace")
         stderr_full = stderr_bytes.decode("utf-8", errors="replace")
 
@@ -90,7 +93,7 @@ def self_heal(
             )
 
             new_prompt = Prompt(error_msg)
-            files_dict = improve_fn(
+            files_dict = await improve_fn(
                 ai, new_prompt, files_dict, memory, preprompts_holder, diff_timeout
             )
         else:
@@ -99,7 +102,7 @@ def self_heal(
     return files_dict
 
 
-def clarified_gen(
+async def clarified_gen(
     ai: AI, prompt: Prompt, memory: BaseMemory, preprompts_holder: PrepromptsHolder
 ) -> FilesDict:
     """
@@ -125,8 +128,10 @@ def clarified_gen(
     preprompts = preprompts_holder.get_preprompts()
     messages: List[Message] = [SystemMessage(content=preprompts["clarify"])]
     user_input = prompt.text  # clarify does not work with vision right now
+    loop = asyncio.get_event_loop()
+
     while True:
-        messages = ai.next(messages, user_input, step_name=curr_fn())
+        messages = await ai.next(messages, user_input, step_name=curr_fn())
         msg = messages[-1].content.strip()
 
         if "nothing to clarify" in msg.lower():
@@ -137,13 +142,13 @@ def clarified_gen(
             break
 
         print('(answer in text, or "c" to move on)\n')
-        user_input = input("")
+        user_input = await loop.run_in_executor(None, input, "")
         print()
 
         if not user_input or user_input == "c":
             print("(letting gpt-computer make its own assumptions)")
             print()
-            messages = ai.next(
+            messages = await ai.next(
                 messages,
                 "Make your own assumptions and state them explicitly before starting",
                 step_name=curr_fn(),
@@ -163,7 +168,7 @@ def clarified_gen(
     ] + messages[
         1:
     ]  # skip the first clarify message, which was the original clarify priming prompt
-    messages = ai.next(
+    messages = await ai.next(
         messages,
         preprompts["generate"].replace("FILE_FORMAT", preprompts["file_format"]),
         step_name=curr_fn(),
@@ -175,7 +180,7 @@ def clarified_gen(
     return files_dict
 
 
-def lite_gen(
+async def lite_gen(
     ai: AI, prompt: Prompt, memory: BaseMemory, preprompts_holder: PrepromptsHolder
 ) -> FilesDict:
     """
@@ -205,7 +210,7 @@ def lite_gen(
 
     preprompts = preprompts_holder.get_preprompts()
     system_prompt = setup_sys_prompt(preprompts)
-    messages = ai.start(
+    messages = await ai.start(
         system_prompt, prompt.to_langchain_content(), step_name=curr_fn()
     )
     chat = messages[-1].content.strip()
