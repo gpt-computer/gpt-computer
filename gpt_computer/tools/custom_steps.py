@@ -5,7 +5,7 @@ from platform import platform
 from sys import version_info
 from typing import List, Union
 
-from langchain.schema import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from gpt_computer.core.ai import AI
 from gpt_computer.core.base_execution_env import BaseExecutionEnv

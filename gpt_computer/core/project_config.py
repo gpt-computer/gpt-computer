@@ -3,6 +3,7 @@ Functions for reading and writing the `gpt-computer.toml` configuration file.
 
 The `gpt-computer.toml` file is a TOML file that contains project-specific configuration used by the GPT Computer CLI and gptcomputer.app.
 """
+
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 

@@ -10,6 +10,7 @@ Functions
 load_gptme : function
     Loads the GPT-Me benchmark, which consists of a series of tasks for evaluation.
 """
+
 from gpt_computer.benchmark.bench_config import GptmeConfig
 from gpt_computer.benchmark.types import Benchmark, Task
 from gpt_computer.core.files_dict import FilesDict
@@ -34,12 +35,12 @@ def load_gptme(config: GptmeConfig) -> Benchmark:
                 command="python hello.py",
                 prompt=Prompt("Change the code in hello.py to print 'Hello, human!'"),
                 assertions={
-                    "correct output": lambda assertable: assertable.stdout
-                    == "Hello, human!\n",
-                    "correct file": lambda assertable: assertable.files[
-                        "hello.py"
-                    ].strip()
-                    == "print('Hello, human!')",
+                    "correct output": lambda assertable: (
+                        assertable.stdout == "Hello, human!\n"
+                    ),
+                    "correct file": lambda assertable: (
+                        assertable.files["hello.py"].strip() == "print('Hello, human!')"
+                    ),
                 },
             ),
             Task(
@@ -48,12 +49,12 @@ def load_gptme(config: GptmeConfig) -> Benchmark:
                 command="python hello.py",
                 prompt=Prompt("Patch the code in hello.py to print 'Hello, human!'"),
                 assertions={
-                    "correct output": lambda assertable: assertable.stdout
-                    == "Hello, human!\n",
-                    "correct file": lambda assertable: assertable.files[
-                        "hello.py"
-                    ].strip()
-                    == "print('Hello, human!')",
+                    "correct output": lambda assertable: (
+                        assertable.stdout == "Hello, human!\n"
+                    ),
+                    "correct file": lambda assertable: (
+                        assertable.files["hello.py"].strip() == "print('Hello, human!')"
+                    ),
                 },
             ),
             Task(
@@ -64,8 +65,9 @@ def load_gptme(config: GptmeConfig) -> Benchmark:
                     "modify hello.py to ask the user for their name and print 'Hello, <name>!'. don't try to execute it"
                 ),
                 assertions={
-                    "correct output": lambda assertable: "Hello, Erik!"
-                    in assertable.stdout,
+                    "correct output": lambda assertable: (
+                        "Hello, Erik!" in assertable.stdout
+                    ),
                 },
             ),
             Task(
@@ -78,8 +80,9 @@ def load_gptme(config: GptmeConfig) -> Benchmark:
                     "write a script prime.py that computes and prints the 100th prime number"
                 ),
                 assertions={
-                    "correct output": lambda assertable: "541"
-                    in assertable.stdout.split(),
+                    "correct output": lambda assertable: (
+                        "541" in assertable.stdout.split()
+                    ),
                 },
             ),
             Task(
@@ -93,11 +96,13 @@ def load_gptme(config: GptmeConfig) -> Benchmark:
                 ),
                 assertions={
                     "clean exit": lambda assertable: assertable.process.returncode == 0,
-                    "clean working tree": lambda assertable: "nothing to commit, working tree clean"
-                    in assertable.stdout,
+                    "clean working tree": lambda assertable: (
+                        "nothing to commit, working tree clean" in assertable.stdout
+                    ),
                     "main.py exists": lambda assertable: "main.py" in assertable.files,
-                    "we have a commit": lambda assertable: "No commits yet"
-                    not in assertable.stdout,
+                    "we have a commit": lambda assertable: (
+                        "No commits yet" not in assertable.stdout
+                    ),
                 },
             ),
         ],

@@ -43,7 +43,7 @@ from typing import List, MutableMapping, Union
 
 import typer
 
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from termcolor import colored
 
 from gpt_computer.core.ai import AI
@@ -101,7 +101,7 @@ def setup_sys_prompt(preprompts: MutableMapping[Union[str, Path], str]) -> str:
 
 
 def setup_sys_prompt_existing_code(
-    preprompts: MutableMapping[Union[str, Path], str]
+    preprompts: MutableMapping[Union[str, Path], str],
 ) -> str:
     """
     Sets up the system prompt for improving existing code.

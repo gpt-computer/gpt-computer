@@ -6,7 +6,7 @@ import os
 from io import StringIO
 from pathlib import Path
 
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from PIL import Image
 
 from gpt_computer.core.token_usage import Tokenizer, TokenUsageLog

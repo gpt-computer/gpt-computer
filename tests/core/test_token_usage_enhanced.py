@@ -1,6 +1,6 @@
 import logging
 
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 
 from gpt_computer.core.token_usage import TokenUsageLog
 
