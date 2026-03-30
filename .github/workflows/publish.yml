@@ -21,31 +21,28 @@ jobs:
           python-version: ${{ matrix.python-version }}
           # Removed the cache line that was here
 
-      # Install Poetry
-      - name: Install Poetry
+      # Install UV
+      - name: Install UV
         run: |
-          curl -sSL https://install.python-poetry.org | python3 -
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-      # Add Poetry to PATH
-      - name: Add Poetry to PATH
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      # Cache Poetry's dependencies based on the lock file
-      - name: Set up Poetry cache
+      # Cache UV's dependencies based on the lock file
+      - name: Set up UV cache
         uses: actions/cache@v5
         with:
-          path: ~/.cache/pypoetry
-          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
           restore-keys: |
-            ${{ runner.os }}-poetry-
+            ${{ runner.os }}-uv-
 
-      # Install dependencies using Poetry (if any)
+      # Install dependencies using UV (if any)
       - name: Install dependencies
-        run: poetry install
+        run: uv sync
 
-      # Build package using Poetry
+      # Build package using UV
       - name: Build package
-        run: poetry build --format sdist
+        run: uv build
 
       # Upload package as build artifact
       - uses: actions/upload-artifact@v7

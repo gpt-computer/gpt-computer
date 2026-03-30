@@ -27,16 +27,18 @@ import backoff
 import openai
 import pyperclip
 
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-from langchain.chat_models.base import BaseChatModel
-from langchain.schema import (
+from langchain_anthropic import ChatAnthropic
+from langchain_core.callbacks import (
+    StdOutCallbackHandler as StreamingStdOutCallbackHandler,
+)
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import (
     AIMessage,
     HumanMessage,
     SystemMessage,
     messages_from_dict,
     messages_to_dict,
 )
-from langchain_anthropic import ChatAnthropic
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 
 try:

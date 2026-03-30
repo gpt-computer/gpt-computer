@@ -1,0 +1,211 @@
+# GitHub Issue Labeler Configuration
+# Automatically labels issues based on file paths and content patterns
+
+# Label issues based on changed files
+files:
+  # Core functionality
+  'gpt_computer/core/**':
+    - core
+    - backend
+
+  # API related
+  'gpt_computer/api/**':
+    - api
+    - backend
+
+  # Agent functionality
+  'gpt_computer/agent/**':
+    - agent
+    - ai
+
+  # CLI application
+  'gpt_computer/applications/cli/**':
+    - cli
+    - application
+
+  # Benchmarking
+  'benchmark/**':
+    - benchmark
+    - testing
+
+  # Tests
+  'tests/**':
+    - tests
+    - testing
+
+  # Documentation
+  'docs/**':
+    - documentation
+  '**.md':
+    - documentation
+  '**.rst':
+    - documentation
+
+  # Configuration files
+  'pyproject.toml':
+    - dependencies
+    - configuration
+  'poetry.lock':
+    - dependencies
+  'uv.lock':
+    - dependencies
+  'Makefile':
+    - build
+    - configuration
+  'docker-compose.yml':
+    - docker
+    - deployment
+  'Dockerfile':
+    - docker
+    - deployment
+
+  # CI/CD
+  '.github/workflows/**':
+    - ci/cd
+    - automation
+  '.github/ISSUE_TEMPLATE/**':
+    - configuration
+  '.github/PULL_REQUEST_TEMPLATE/**':
+    - configuration
+
+  # Scripts
+  'scripts/**':
+    - scripts
+    - automation
+
+  # Projects and examples
+  'projects/**':
+    - examples
+    - projects
+
+# Label issues based on title/content patterns
+labels:
+  # Bug related
+  bug:
+    - '[bug]'
+    - 'broken'
+    - 'error'
+    - 'exception'
+    - 'crash'
+    - 'fail'
+    - 'issue'
+
+  # Enhancement/Feature requests
+  enhancement:
+    - '[feature]'
+    - '[enhancement]'
+    - 'add'
+    - 'implement'
+    - 'new'
+    - 'support'
+
+  # Documentation
+  documentation:
+    - '[docs]'
+    - '[documentation]'
+    - 'readme'
+    - 'guide'
+    - 'tutorial'
+
+  # Testing
+  testing:
+    - '[test]'
+    - 'tests'
+    - 'coverage'
+    - 'pytest'
+    - 'unit test'
+    - 'integration test'
+
+  # Performance
+  performance:
+    - '[performance]'
+    - 'slow'
+    - 'optimize'
+    - 'memory'
+    - 'speed'
+    - 'latency'
+
+  # Security
+  security:
+    - '[security]'
+    - 'vulnerability'
+    - 'exploit'
+    - 'auth'
+    - 'permission'
+
+  # AI/LLM related
+  ai:
+    - 'llm'
+    - 'gpt'
+    - 'openai'
+    - 'claude'
+    - 'anthropic'
+    - 'model'
+    - 'prompt'
+
+  # Dependencies
+  dependencies:
+    - '[deps]'
+    - 'dependency'
+    - 'requirement'
+    - 'install'
+    - 'package'
+    - 'poetry'
+    - 'uv'
+
+  # Docker
+  docker:
+    - '[docker]'
+    - 'container'
+    - 'image'
+    - 'dockerfile'
+
+  # API
+  api:
+    - '[api]'
+    - 'endpoint'
+    - 'rest'
+    - 'http'
+    - 'server'
+
+  # CLI
+  cli:
+    - '[cli]'
+    - 'command line'
+    - 'terminal'
+    - 'shell'
+
+  # Configuration
+  configuration:
+    - '[config]'
+    - 'settings'
+    - 'environment'
+    - 'env'
+
+  # Build/Deployment
+  build:
+    - '[build]'
+    - 'compile'
+    - 'package'
+    - 'release'
+
+  # Code quality
+  code-quality:
+    - '[refactor]'
+    - 'cleanup'
+    - 'style'
+    - 'lint'
+    - 'format'
+
+  # Good first issues
+  'good first issue':
+    - '[good first issue]'
+    - 'beginner'
+    - 'easy'
+    - 'simple'
+
+  # Help wanted
+  'help wanted':
+    - '[help wanted]'
+    - 'assistance'
+    - 'support needed'

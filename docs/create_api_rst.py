@@ -1,4 +1,5 @@
 """Script for auto-generating api_reference.rst"""
+
 import glob
 import re
 
@@ -49,7 +50,7 @@ API Reference
         section = f":mod:`gpt_computer.{module}`: {module_title}"
         full_doc += f"""\
 {section}
-{'=' * (len(section) + 1)}
+{"=" * (len(section) + 1)}
 
 .. automodule:: gpt_computer.{module}
     :no-members:

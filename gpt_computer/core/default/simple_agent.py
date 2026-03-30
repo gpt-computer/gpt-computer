@@ -67,22 +67,24 @@ class SimpleAgent(BaseAgent):
             preprompts_holder=preprompts_holder or PrepromptsHolder(PREPROMPTS_PATH),
         )
 
-    def init(self, prompt: Prompt) -> FilesDict:
-        files_dict = gen_code(self.ai, prompt, self.memory, self.preprompts_holder)
-        entrypoint = gen_entrypoint(
+    async def init(self, prompt: Prompt) -> FilesDict:
+        files_dict = await gen_code(
+            self.ai, prompt, self.memory, self.preprompts_holder
+        )
+        entrypoint = await gen_entrypoint(
             self.ai, prompt, files_dict, self.memory, self.preprompts_holder
         )
         combined_dict = {**files_dict, **entrypoint}
         files_dict = FilesDict(combined_dict)
         return files_dict
 
-    def improve(
+    async def improve(
         self,
         files_dict: FilesDict,
         prompt: Prompt,
         execution_command: Optional[str] = None,
     ) -> FilesDict:
-        files_dict = improve_fn(
+        files_dict = await improve_fn(
             self.ai, prompt, files_dict, self.memory, self.preprompts_holder
         )
         return files_dict

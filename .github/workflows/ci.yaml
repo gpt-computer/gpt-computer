@@ -1,13 +1,15 @@
-name: Tox pytest all python versions
+name: CI - Tests & Code Quality
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
     paths:
       - gpt_computer/**
       - tests/**
+      - pyproject.toml
+      - tox.ini
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 concurrency:
   group: ${{ github.workflow }} - ${{ github.ref }}
@@ -15,35 +17,132 @@ concurrency:
 
 jobs:
   test:
+    name: Test Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12']
+      fail-fast: false
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for better diffs
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v4
       with:
-        python-version: ${{ matrix.python-version == '3.12' && '3.12.3' || matrix.python-version }} # Using 3.12.3 to resolve Pydantic ForwardRef issue
-        cache: 'pip'  # Note that pip is for the tox level. Poetry is still used for installing the specific environments (tox.ini)
+        python-version: ${{ matrix.python-version == '3.12' && '3.12.3' || matrix.python-version }}
+        cache: 'pip'
 
     - name: Check Python Version
       run: python --version
 
+    - name: Install system dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        pip install tox==4.15.0 uv
+
+    - name: Run tests with tox
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: tox -e py${{ matrix.python-version == '3.12' && '312' || matrix.python-version == '3.11' && '311' || '310' }}
+
+    - name: Upload coverage reports
+      if: matrix.python-version == '3.10'
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-reports
+        path: |
+          coverage.xml
+          htmlcov/
+
+  coverage:
+    name: Coverage Analysis
+    runs-on: ubuntu-latest
+    needs: test
+    if: always()
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install tox==4.15.0 poetry
+        pip install uv coverage[toml]
 
-    - name: Run tox
-      env:
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      run: tox
+    - name: Download coverage reports
+      uses: actions/download-artifact@v3
+      with:
+        name: coverage-reports
 
-    # Temporarily disabling codecov until we resolve codecov rate limiting issue
-    # - name: Report coverage
-    #   run: |
-    #     bash <(curl -s https://codecov.io/bash)
+    - name: Generate coverage report
+      run: |
+        if [ -f coverage.xml ]; then
+          coverage report -m
+        fi
+
+    - name: Upload to Codecov (optional)
+      if: always()
+      continue-on-error: true
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  lint:
+    name: Code Quality (Ruff & Type Check)
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install ruff mypy
+
+    - name: Run Ruff linter
+      run: ruff check gpt_computer tests --show-fixes || true
+
+    - name: Run MyPy type checker
+      run: mypy gpt_computer --ignore-missing-imports || true
+      continue-on-error: true
+
+  format-check:
+    name: Code Format Check (Black)
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install Black formatter
+      run: pip install black
+
+    - name: Check code formatting
+      run: black --check gpt_computer tests || true
+      continue-on-error: true

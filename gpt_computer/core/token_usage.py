@@ -8,7 +8,7 @@ from typing import List, Union
 
 import tiktoken
 
-from langchain.schema import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from PIL import Image
 
 # workaround for function moved in:

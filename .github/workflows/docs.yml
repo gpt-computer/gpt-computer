@@ -1,0 +1,82 @@
+name: Documentation Build & Deploy
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'docs/**'
+      - 'gpt_computer/**'
+      - 'ARCHITECTURE.md'
+      - 'MODULE_STRUCTURE.md'
+      - 'README.md'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'docs/**'
+      - 'gpt_computer/**'
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    name: Build Documentation
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install uv
+        uv sync --group=docs
+
+    - name: Generate API reference
+      run: |
+        cd docs
+        python create_api_rst.py
+      continue-on-error: true
+
+    - name: Build documentation with Sphinx
+      run: |
+        cd docs
+        make clean
+        make html
+      continue-on-error: false
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: documentation-build
+        path: docs/_build/html/
+        retention-days: 30
+
+    - name: Deploy to GitHub Pages
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/_build/html
+        cname: gpt-computer.readthedocs.io
+      continue-on-error: true
+
+    - name: Comment on PR with docs preview
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '📚 Documentation build successful! Check the artifacts for the HTML output.'
+          })
+      continue-on-error: true

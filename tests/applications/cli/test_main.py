@@ -195,7 +195,8 @@ class TestMain:
 
 class TestLoadPrompt:
     #  Load prompt from existing file in input_repo
-    def test_load_prompt_existing_file(self):
+    @pytest.mark.asyncio
+    async def test_load_prompt_existing_file(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             input_repo = DiskMemory(tmp_dir)
             prompt_file = "prompt.txt"
@@ -205,14 +206,17 @@ class TestLoadPrompt:
             improve_mode = False
             image_directory = ""
 
-            result = load_prompt(input_repo, improve_mode, prompt_file, image_directory)
+            result = await load_prompt(
+                input_repo, improve_mode, prompt_file, image_directory
+            )
 
             assert isinstance(result, Prompt)
             assert result.text == prompt_content
             assert result.image_urls is None
 
     #  Prompt file does not exist in input_repo, and improve_mode is False
-    def test_load_prompt_no_file_improve_mode_false(self):
+    @pytest.mark.asyncio
+    async def test_load_prompt_no_file_improve_mode_false(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             input_repo = DiskMemory(tmp_dir)
             prompt_file = "prompt.txt"
@@ -224,7 +228,7 @@ class TestLoadPrompt:
                 "builtins.input",
                 return_value="What application do you want gpt-computer to generate?",
             ):
-                result = load_prompt(
+                result = await load_prompt(
                     input_repo, improve_mode, prompt_file, image_directory
                 )
 
@@ -235,7 +239,8 @@ class TestLoadPrompt:
             assert result.image_urls is None
 
     #  Prompt file is a directory
-    def test_load_prompt_directory_file(self):
+    @pytest.mark.asyncio
+    async def test_load_prompt_directory_file(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             input_repo = DiskMemory(tmp_dir)
             prompt_file = os.path.join(tmp_dir, "prompt")
@@ -246,10 +251,13 @@ class TestLoadPrompt:
             image_directory = ""
 
             with pytest.raises(ValueError):
-                load_prompt(input_repo, improve_mode, prompt_file, image_directory)
+                await load_prompt(
+                    input_repo, improve_mode, prompt_file, image_directory
+                )
 
     #  Prompt file is empty
-    def test_load_prompt_empty_file(self):
+    @pytest.mark.asyncio
+    async def test_load_prompt_empty_file(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             input_repo = DiskMemory(tmp_dir)
             prompt_file = "prompt.txt"
@@ -262,7 +270,7 @@ class TestLoadPrompt:
                 "builtins.input",
                 return_value="What application do you want gpt-computer to generate?",
             ):
-                result = load_prompt(
+                result = await load_prompt(
                     input_repo, improve_mode, prompt_file, image_directory
                 )
 
@@ -273,7 +281,8 @@ class TestLoadPrompt:
             assert result.image_urls is None
 
     #  image_directory does not exist in input_repo
-    def test_load_prompt_no_image_directory(self):
+    @pytest.mark.asyncio
+    async def test_load_prompt_no_image_directory(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             input_repo = DiskMemory(tmp_dir)
             prompt_file = "prompt.txt"
@@ -284,7 +293,9 @@ class TestLoadPrompt:
             image_directory = "tests/test_data"
             shutil.copytree(image_directory, os.path.join(tmp_dir, image_directory))
 
-            result = load_prompt(input_repo, improve_mode, prompt_file, image_directory)
+            result = await load_prompt(
+                input_repo, improve_mode, prompt_file, image_directory
+            )
 
             assert isinstance(result, Prompt)
             assert result.text == prompt_content

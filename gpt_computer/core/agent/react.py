@@ -4,7 +4,7 @@ import re
 
 from typing import Dict
 
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 
 from gpt_computer.core.agent_tools.registry import ToolRegistry
 from gpt_computer.core.ai import AI
@@ -84,7 +84,7 @@ class ReActAgent:
         logger.info(f"Starting ReAct loop for question: {question}")
 
         for i in range(self.max_iterations):
-            logger.debug(f"Iteration {i+1}/{self.max_iterations}")
+            logger.debug(f"Iteration {i + 1}/{self.max_iterations}")
 
             # Get response from LLM
             # AI.next expects a step_name for logging

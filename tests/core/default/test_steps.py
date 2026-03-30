@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from langchain.schema import SystemMessage
+from langchain_core.messages import SystemMessage
 
 from gpt_computer.core.ai import AI
 from gpt_computer.core.default.disk_memory import DiskMemory
@@ -78,10 +78,11 @@ pytest test_factorial.py
 
 class TestGenCode:
     #  Generates code based on a given prompt using an AI model.
-    def test_generates_code_using_ai_model(self):
+    @pytest.mark.asyncio
+    async def test_generates_code_using_ai_model(self):
         # Mock AI class
         class MockAI:
-            def start(self, sys_prompt, user_prompt, step_name):
+            async def start(self, sys_prompt, user_prompt, step_name):
                 return [SystemMessage(content=factorial_program)]
 
         ai = MockAI()
@@ -89,7 +90,7 @@ class TestGenCode:
 
         memory = DiskMemory(tempfile.mkdtemp())
         preprompts_holder = PrepromptsHolder(PREPROMPTS_PATH)
-        code = gen_code(ai, prompt, memory, preprompts_holder)
+        code = await gen_code(ai, prompt, memory, preprompts_holder)
 
         assert isinstance(code, FilesDict)
         assert len(code) == 2
@@ -97,7 +98,8 @@ class TestGenCode:
         # assert memory[CODE_GEN_LOG_FILE] == factorial_program.strip()
 
     #  The generated code is saved to disk.
-    def test_generated_code_saved_to_disk(self):
+    @pytest.mark.asyncio
+    async def test_generated_code_saved_to_disk(self):
         # Mock AI class
         class MockAI:
             def start(self, sys_prompt, user_prompt, step_name):
@@ -107,7 +109,7 @@ class TestGenCode:
         prompt = Prompt("Write a function that calculates the factorial of a number.")
         memory = DiskMemory(tempfile.mkdtemp())
         preprompts_holder = PrepromptsHolder(PREPROMPTS_PATH)
-        code = gen_code(ai, prompt, memory, preprompts_holder)
+        code = await gen_code(ai, prompt, memory, preprompts_holder)
 
         assert isinstance(code, FilesDict)
         assert len(code) == 2

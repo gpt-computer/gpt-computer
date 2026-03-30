@@ -3,7 +3,7 @@ import tempfile
 
 import pytest
 
-from langchain.schema import AIMessage
+from langchain_core.messages import AIMessage
 
 from gpt_computer.applications.cli.cli_agent import CliAgent
 from gpt_computer.core.default.disk_execution_env import DiskExecutionEnv
@@ -17,7 +17,8 @@ from gpt_computer.tools.custom_steps import clarified_gen, lite_gen
 from tests.mock_ai import MockAI
 
 
-def test_init_standard_config(monkeypatch):
+@pytest.mark.asyncio
+async def test_init_standard_config(monkeypatch):
     monkeypatch.setattr("builtins.input", lambda _: "y")
     temp_dir = tempfile.mkdtemp()
     memory = DiskMemory(memory_path(temp_dir))
@@ -33,7 +34,7 @@ def test_init_standard_config(monkeypatch):
     cli_agent = CliAgent.with_default_config(memory, execution_env, ai=mock_ai)
     outfile = "output.txt"
     os.path.join(temp_dir, outfile)
-    code = cli_agent.init(
+    code = await cli_agent.init(
         Prompt(
             f"Make a program that prints 'Hello World!' to a file called '{outfile}'"
         )
@@ -47,7 +48,8 @@ def test_init_standard_config(monkeypatch):
     assert code[outfile] == "Hello World!"
 
 
-def test_init_lite_config(monkeypatch):
+@pytest.mark.asyncio
+async def test_init_lite_config(monkeypatch):
     monkeypatch.setattr("builtins.input", lambda _: "y")
     temp_dir = tempfile.mkdtemp()
     memory = DiskMemory(memory_path(temp_dir))
@@ -66,7 +68,7 @@ def test_init_lite_config(monkeypatch):
     )
     outfile = "output.txt"
     os.path.join(temp_dir, outfile)
-    code = cli_agent.init(
+    code = await cli_agent.init(
         Prompt(
             f"Make a program that prints 'Hello World!' to a file called '{outfile}'"
         )
@@ -80,7 +82,8 @@ def test_init_lite_config(monkeypatch):
     assert code[outfile].strip() == "Hello World!"
 
 
-def test_init_clarified_gen_config(monkeypatch):
+@pytest.mark.asyncio
+async def test_init_clarified_gen_config(monkeypatch):
     monkeypatch.setattr("builtins.input", lambda _: "y")
     temp_dir = tempfile.mkdtemp()
     memory = DiskMemory(memory_path(temp_dir))
@@ -98,7 +101,7 @@ def test_init_clarified_gen_config(monkeypatch):
         memory, execution_env, ai=mock_ai, code_gen_fn=clarified_gen
     )
     outfile = "output.txt"
-    code = cli_agent.init(
+    code = await cli_agent.init(
         Prompt(
             f"Make a program that prints 'Hello World!' to a file called '{outfile} either using python or javascript'"
         )
@@ -112,7 +115,8 @@ def test_init_clarified_gen_config(monkeypatch):
     assert code[outfile].strip() == "Hello World!"
 
 
-def test_improve_standard_config(monkeypatch):
+@pytest.mark.asyncio
+async def test_improve_standard_config(monkeypatch):
     monkeypatch.setattr("builtins.input", lambda _: "y")
     temp_dir = tempfile.mkdtemp()
     code = FilesDict(
@@ -134,7 +138,7 @@ def test_improve_standard_config(monkeypatch):
     )
     cli_agent = CliAgent.with_default_config(memory, execution_env, ai=mock_ai)
 
-    code = cli_agent.improve(
+    code = await cli_agent.improve(
         code,
         Prompt(
             "Change the program so that it prints '!dlroW olleH' instead of 'Hello World!'"

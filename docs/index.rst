@@ -1,6 +1,8 @@
 Welcome to GPT-COMPUTER's Documentation
 =======================================
 
+gpt-computer is an **execution-native AI software generation platform** that transforms natural language into executable, testable, and iteratively refined software.
+
 .. toctree::
    :maxdepth: 2
    :caption: GET STARTED:
@@ -11,11 +13,40 @@ Welcome to GPT-COMPUTER's Documentation
 
 .. toctree::
    :maxdepth: 2
+   :caption: ARCHITECTURE & DESIGN:
+
+   architecture/overview
+   architecture/module-structure
+   architecture/technical-guide
+
+.. toctree::
+   :maxdepth: 2
    :caption: USER GUIDES:
 
-   windows_readme_link
+   guides/windows-setup
    open_models.md
    tracing_debugging.md
+   guides/api-guide
+
+.. toctree::
+   :maxdepth: 2
+   :caption: DEVELOPER GUIDES:
+
+   development/setup
+   development/testing
+
+.. toctree::
+   :maxdepth: 2
+   :caption: PLANNING & ROADMAP:
+
+   planning/roadmap
+   planning/features
+   planning/issues
+   planning/implementation-plan
+   planning/phase-1-kickoff
+   planning/critical-fixes
+   planning/improvements
+   planning/completion-report
 
 .. toctree::
    :maxdepth: 2

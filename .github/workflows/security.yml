@@ -1,0 +1,99 @@
+name: Security & Dependency Check
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'pyproject.toml'
+      - 'poetry.lock'
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+
+jobs:
+  dependency-check:
+    runs-on: ubuntu-latest
+    name: Check Dependencies
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install poetry
+      run: pip install poetry
+
+    - name: Check for outdated packages
+      run: poetry show --outdated
+      continue-on-error: true
+
+    - name: Check for security vulnerabilities
+      run: |
+        pip install safety
+        safety check --json || true
+      continue-on-error: true
+
+  python-security:
+    runs-on: ubuntu-latest
+    name: Python Code Security
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Bandit
+      run: pip install bandit
+
+    - name: Run Bandit security scan
+      run: bandit -r gpt_computer -f json -o bandit-report.json || true
+      continue-on-error: true
+
+    - name: Upload Bandit report
+      uses: actions/upload-artifact@v3
+      with:
+        name: bandit-security-report
+        path: bandit-report.json
+      continue-on-error: true
+
+  license-check:
+    runs-on: ubuntu-latest
+    name: License Compliance
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        pip install poetry
+        poetry install --no-root
+
+    - name: Check licenses with pip-licenses
+      run: |
+        pip install pip-licenses
+        pip-licenses --format=markdown --output-file=LICENSE_REPORT.md
+      continue-on-error: true
+
+    - name: Upload license report
+      uses: actions/upload-artifact@v3
+      with:
+        name: license-report
+        path: LICENSE_REPORT.md
+      continue-on-error: true

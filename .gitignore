@@ -33,7 +33,6 @@ venv_test_installation/
 .ruff_cache/
 .mypy_cache/
 .coverage
-coverage.*
 
 # macOS specific files
 .DS_Store

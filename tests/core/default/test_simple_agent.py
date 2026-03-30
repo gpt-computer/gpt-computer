@@ -2,7 +2,7 @@ import tempfile
 
 import pytest
 
-from langchain.schema import AIMessage
+from langchain_core.messages import AIMessage
 
 from gpt_computer.core.default.disk_execution_env import DiskExecutionEnv
 from gpt_computer.core.default.paths import ENTRYPOINT_FILE
@@ -12,7 +12,8 @@ from gpt_computer.core.prompt import Prompt
 from tests.mock_ai import MockAI
 
 
-def test_init():
+@pytest.mark.asyncio
+async def test_init():
     temp_dir = tempfile.mkdtemp()
     mock_ai = MockAI(
         [
@@ -24,7 +25,7 @@ def test_init():
     )
     lean_agent = SimpleAgent.with_default_config(temp_dir, mock_ai)
     outfile = "output.txt"
-    code = lean_agent.init(
+    code = await lean_agent.init(
         Prompt(
             f"Make a program that prints 'Hello World!' to a file called '{outfile}'"
         )
@@ -38,7 +39,8 @@ def test_init():
     assert code[outfile] == "Hello World!"
 
 
-def test_improve():
+@pytest.mark.asyncio
+async def test_improve():
     temp_dir = tempfile.mkdtemp()
     code = FilesDict(
         {
@@ -55,12 +57,11 @@ def test_improve():
         ]
     )
     lean_agent = SimpleAgent.with_default_config(temp_dir, mock_ai)
-    code = lean_agent.improve(
+    code = await lean_agent.improve(
         code,
         Prompt(
             "Change the program so that it prints '!dlroW olleH' instead of 'Hello World!' "
         ),
-        f"bash {ENTRYPOINT_FILE}",
     )
 
     env = DiskExecutionEnv()

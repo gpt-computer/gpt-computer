@@ -203,6 +203,36 @@ Deploy within:
 
 ---
 
+# 📚 Documentation
+
+Comprehensive guides for all audiences:
+
+**🚀 Quick Start**:
+- [**Setup Guide**](docs/development/setup.md) - Install and configure gpt-computer
+- [**API Guide**](docs/guides/api-guide.md) - REST API reference with examples
+- [**Windows Setup**](docs/guides/windows-setup.md) - Platform-specific installation
+
+**🏗 Architecture & Design**:
+- [**Architecture Overview**](docs/architecture/overview.md) - System design and principles
+- [**Module Structure**](docs/architecture/module-structure.md) - Code organization and components
+- [**Technical Guide**](docs/architecture/technical-guide.md) - Deep technical implementation
+
+**🛠 Development**:
+- [**Development Setup**](docs/development/setup.md) - Development environment and workflow
+- [**Testing Guide**](docs/development/testing.md) - How to write and run tests
+- [**Contributing Guide**](CONTRIBUTING.md) - How to contribute
+
+**📋 Planning & Roadmap**:
+- [**Development Roadmap**](docs/planning/roadmap.md) - Strategic development timeline
+- [**Feature Specifications**](docs/planning/features.md) - Detailed feature descriptions
+- [**Implementation Issues**](docs/planning/issues.md) - GitHub issue templates and tracking
+
+📖 **[**Browse All Documentation**](docs/index.md)** - Complete documentation hub
+
+Full documentation also available at: https://gpt-computer.readthedocs.io/
+
+---
+
 # 🧠 Strategic Vision
 
 gpt-computer defines a foundational primitive for autonomous systems:

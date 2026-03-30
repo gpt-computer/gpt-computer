@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from langchain.schema import AIMessage
+from langchain_core.messages import AIMessage
 from pydantic import BaseModel
 
 from gpt_computer.core.agent.react import ReActAgent

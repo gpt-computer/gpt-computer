@@ -9,6 +9,7 @@ with an AI agent and to enforce type checks on keys and values.
 Classes:
     FilesDict: A dictionary-based container for managing code files.
 """
+
 from collections import OrderedDict
 from pathlib import Path
 from typing import Union
