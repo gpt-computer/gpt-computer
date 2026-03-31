@@ -93,7 +93,7 @@ jobs:
     - name: Upload to Codecov (optional)
       if: always()
       continue-on-error: true
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v6
       with:
         file: ./coverage.xml
         flags: unittests
