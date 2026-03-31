@@ -60,6 +60,14 @@ except ImportError:
 
 from gpt_computer.core.token_usage import TokenUsageLog
 
+# Import structured logging if available
+try:
+    from gpt_computer.core.structured_logging import get_logger
+
+    STRUCTURED_LOGGING_AVAILABLE = True
+except ImportError:
+    STRUCTURED_LOGGING_AVAILABLE = False
+
 # Type hint for a chat message
 Message = Union[AIMessage, HumanMessage, SystemMessage]
 
@@ -139,6 +147,12 @@ class AI:
         self.llm = self._create_chat_model()
         self.token_usage_log = TokenUsageLog(model_name)
 
+        # Initialize structured logger if available
+        if STRUCTURED_LOGGING_AVAILABLE:
+            self.structured_logger = get_logger(f"AI.{model_name}")
+        else:
+            self.structured_logger = None
+
         logger.debug(f"Using model {self.model_name}")
 
     async def start(self, system: str, user: Any, *, step_name: str) -> List[Message]:
@@ -164,6 +178,17 @@ class AI:
             SystemMessage(content=system),
             HumanMessage(content=user),
         ]
+
+        # Log with structured logger if available
+        if self.structured_logger:
+            self.structured_logger.info(
+                "Starting conversation",
+                step_name=step_name,
+                model=self.model_name,
+                system_length=len(str(system)),
+                user_length=len(str(user)),
+            )
+
         return await self.next(messages, step_name=step_name)
 
     def _extract_content(self, content):
@@ -255,6 +280,16 @@ class AI:
 
         if prompt:
             messages.append(HumanMessage(content=prompt))
+
+        # Log with structured logger if available
+        if self.structured_logger:
+            self.structured_logger.info(
+                "Advancing conversation",
+                step_name=step_name,
+                model=self.model_name,
+                message_count=len(messages),
+                has_prompt=prompt is not None,
+            )
 
         logger.debug(
             "Creating a new chat completion: %s",
