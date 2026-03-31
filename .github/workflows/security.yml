@@ -60,7 +60,7 @@ jobs:
       continue-on-error: true
 
     - name: Upload Bandit report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       with:
         name: bandit-security-report
         path: bandit-report.json
@@ -92,7 +92,7 @@ jobs:
       continue-on-error: true
 
     - name: Upload license report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       with:
         name: license-report
         path: LICENSE_REPORT.md
