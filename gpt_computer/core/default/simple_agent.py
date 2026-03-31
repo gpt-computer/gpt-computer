@@ -8,6 +8,7 @@ environment to generate and refine code based on user prompts.
 """
 
 import tempfile
+import time
 
 from typing import Optional
 
@@ -22,6 +23,17 @@ from gpt_computer.core.default.steps import gen_code, gen_entrypoint, improve_fn
 from gpt_computer.core.files_dict import FilesDict
 from gpt_computer.core.preprompts_holder import PrepromptsHolder
 from gpt_computer.core.prompt import Prompt
+
+# Import structured logging and tracing if available
+try:
+    from gpt_computer.core.structured_logging import get_logger
+    from gpt_computer.core.tracing import trace_async_function
+
+    STRUCTURED_LOGGING_AVAILABLE = True
+    TRACING_AVAILABLE = True
+except ImportError:
+    STRUCTURED_LOGGING_AVAILABLE = False
+    TRACING_AVAILABLE = False
 
 
 class SimpleAgent(BaseAgent):
@@ -56,6 +68,12 @@ class SimpleAgent(BaseAgent):
         self.execution_env = execution_env
         self.ai = ai or AI()
 
+        # Initialize structured logger if available
+        if STRUCTURED_LOGGING_AVAILABLE:
+            self.structured_logger = get_logger("SimpleAgent")
+        else:
+            self.structured_logger = None
+
     @classmethod
     def with_default_config(
         cls, path: str, ai: AI = None, preprompts_holder: PrepromptsHolder = None
@@ -67,27 +85,101 @@ class SimpleAgent(BaseAgent):
             preprompts_holder=preprompts_holder or PrepromptsHolder(PREPROMPTS_PATH),
         )
 
+    @ trace_async_function("SimpleAgent", "init") if TRACING_AVAILABLE else lambda x: x
     async def init(self, prompt: Prompt) -> FilesDict:
-        files_dict = await gen_code(
-            self.ai, prompt, self.memory, self.preprompts_holder
-        )
-        entrypoint = await gen_entrypoint(
-            self.ai, prompt, files_dict, self.memory, self.preprompts_holder
-        )
-        combined_dict = {**files_dict, **entrypoint}
-        files_dict = FilesDict(combined_dict)
-        return files_dict
+        start_time = time.time()
 
+        # Log with structured logger if available
+        if self.structured_logger:
+            self.structured_logger.info(
+                "Starting SimpleAgent initialization",
+                prompt_length=len(str(prompt)),
+                model=self.ai.model_name,
+            )
+
+        try:
+            files_dict = await gen_code(
+                self.ai, prompt, self.memory, self.preprompts_holder
+            )
+            entrypoint = await gen_entrypoint(
+                self.ai, prompt, files_dict, self.memory, self.preprompts_holder
+            )
+            combined_dict = {**files_dict, **entrypoint}
+            files_dict = FilesDict(combined_dict)
+
+            total_time = time.time() - start_time
+
+            if self.structured_logger:
+                self.structured_logger.info(
+                    "SimpleAgent initialization completed",
+                    total_time_ms=total_time * 1000,
+                    files_generated=len(files_dict),
+                    success=True,
+                )
+
+            return files_dict
+
+        except Exception as e:
+            total_time = time.time() - start_time
+
+            if self.structured_logger:
+                self.structured_logger.error(
+                    "SimpleAgent initialization failed",
+                    total_time_ms=total_time * 1000,
+                    error=str(e),
+                    success=False,
+                )
+            raise
+
+    @ trace_async_function(
+        "SimpleAgent", "improve"
+    ) if TRACING_AVAILABLE else lambda x: x
     async def improve(
         self,
         files_dict: FilesDict,
         prompt: Prompt,
         execution_command: Optional[str] = None,
     ) -> FilesDict:
-        files_dict = await improve_fn(
-            self.ai, prompt, files_dict, self.memory, self.preprompts_holder
-        )
-        return files_dict
+        start_time = time.time()
+
+        # Log with structured logger if available
+        if self.structured_logger:
+            self.structured_logger.info(
+                "Starting SimpleAgent improvement",
+                prompt_length=len(str(prompt)),
+                files_count=len(files_dict),
+                model=self.ai.model_name,
+                has_execution_command=execution_command is not None,
+            )
+
+        try:
+            files_dict = await improve_fn(
+                self.ai, prompt, files_dict, self.memory, self.preprompts_holder
+            )
+
+            total_time = time.time() - start_time
+
+            if self.structured_logger:
+                self.structured_logger.info(
+                    "SimpleAgent improvement completed",
+                    total_time_ms=total_time * 1000,
+                    final_files_count=len(files_dict),
+                    success=True,
+                )
+
+            return files_dict
+
+        except Exception as e:
+            total_time = time.time() - start_time
+
+            if self.structured_logger:
+                self.structured_logger.error(
+                    "SimpleAgent improvement failed",
+                    total_time_ms=total_time * 1000,
+                    error=str(e),
+                    success=False,
+                )
+            raise
 
 
 def default_config_agent():
