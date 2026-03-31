@@ -33,6 +33,7 @@ import os
 import platform
 import subprocess
 import sys
+import time
 
 from pathlib import Path
 
@@ -63,6 +64,20 @@ from gpt_computer.core.logging_config import setup_logging
 from gpt_computer.core.preprompts_holder import PrepromptsHolder
 from gpt_computer.core.prompt import Prompt
 from gpt_computer.tools.custom_steps import clarified_gen, lite_gen, self_heal
+
+# Import structured logging and tracing if available
+try:
+    from gpt_computer.core.structured_logging import (
+        get_logger,
+        setup_structured_logging,
+    )
+    from gpt_computer.core.tracing import trace_async_function
+
+    STRUCTURED_LOGGING_AVAILABLE = True
+    TRACING_AVAILABLE = True
+except ImportError:
+    STRUCTURED_LOGGING_AVAILABLE = False
+    TRACING_AVAILABLE = False
 
 app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]}
@@ -403,6 +418,7 @@ def main(
     )
 
 
+@ trace_async_function("CLI", "main") if TRACING_AVAILABLE else lambda x: x
 async def _main(
     project_path: str,
     model: str,
@@ -426,6 +442,26 @@ async def _main(
     sysinfo: bool,
     diff_timeout: int,
 ):
+    start_time = time.time()
+
+    # Initialize structured logger if available
+    if STRUCTURED_LOGGING_AVAILABLE:
+        structured_logger = get_logger("CLI")
+        structured_logger.info(
+            "CLI session started",
+            project_path=project_path,
+            model=model,
+            temperature=temperature,
+            improve_mode=improve_mode,
+            lite_mode=lite_mode,
+            clarify_mode=clarify_mode,
+            self_heal_mode=self_heal_mode,
+            llm_via_clipboard=llm_via_clipboard,
+            verbose=verbose,
+            debug=debug,
+        )
+    else:
+        structured_logger = None
     if debug:
         import pdb
 
@@ -505,8 +541,16 @@ async def _main(
     memory = DiskMemory(memory_path(project_path))
     memory.archive_logs()
 
-    # Set up logging after memory is ready
-    setup_logging(verbose=verbose, memory=memory)
+    # Set up structured logging if available, fallback to regular logging
+    if STRUCTURED_LOGGING_AVAILABLE:
+        setup_structured_logging(
+            level="DEBUG" if verbose else "INFO",
+            service_name="gpt-computer-cli",
+            log_file=str(memory.path / "logs" / "structured.log"),
+            console_output=True,
+        )
+    else:
+        setup_logging(verbose=verbose, memory=memory)
 
     execution_env = DiskExecutionEnv()
     agent = CliAgent.with_default_config(
@@ -560,11 +604,37 @@ async def _main(
         files.push(files_dict)
 
     if ai.token_usage_log.is_openai_model():
-        typer.echo(f"Total api cost: $ {ai.token_usage_log.usage_cost()}")
+        cost_message = f"Total api cost: $ {ai.token_usage_log.usage_cost()}"
+        typer.echo(cost_message)
+        if structured_logger:
+            structured_logger.info(
+                "CLI session completed",
+                total_cost=ai.token_usage_log.usage_cost(),
+                total_tokens=ai.token_usage_log.total_tokens(),
+                total_time_ms=(time.time() - start_time) * 1000,
+                success=True,
+            )
     elif os.getenv("LOCAL_MODEL"):
-        typer.echo("Total api cost: $ 0.0 since we are using local LLM.")
+        cost_message = "Total api cost: $ 0.0 since we are using local LLM."
+        typer.echo(cost_message)
+        if structured_logger:
+            structured_logger.info(
+                "CLI session completed",
+                total_cost=0.0,
+                local_model=True,
+                total_time_ms=(time.time() - start_time) * 1000,
+                success=True,
+            )
     else:
-        typer.echo(f"Total tokens used: {ai.token_usage_log.total_tokens()}")
+        token_message = f"Total tokens used: {ai.token_usage_log.total_tokens()}"
+        typer.echo(token_message)
+        if structured_logger:
+            structured_logger.info(
+                "CLI session completed",
+                total_tokens=ai.token_usage_log.total_tokens(),
+                total_time_ms=(time.time() - start_time) * 1000,
+                success=True,
+            )
 
 
 @app.command(help="List all available projects in the projects/ folder.")
