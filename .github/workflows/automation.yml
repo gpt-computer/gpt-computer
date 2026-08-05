@@ -8,6 +8,11 @@ on:
   pull_request:
     types: [opened, edited, reopened]
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   mark-stale-issues:
     runs-on: ubuntu-latest
