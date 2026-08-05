@@ -40,9 +40,9 @@ def get_langs() -> dict[str, str]:
 
 def generate_lang_path(*, lang: str, path: Path) -> Path:
     en_docs_path = Path("docs/en/docs")
-    assert str(path).startswith(
-        str(en_docs_path)
-    ), f"Path must be inside {en_docs_path}"
+    assert str(path).startswith(str(en_docs_path)), (
+        f"Path must be inside {en_docs_path}"
+    )
     lang_docs_path = Path(f"docs/{lang}/docs")
     out_path = Path(str(path).replace(str(en_docs_path), str(lang_docs_path)))
     return out_path
@@ -50,9 +50,9 @@ def generate_lang_path(*, lang: str, path: Path) -> Path:
 
 def generate_en_path(*, lang: str, path: Path) -> Path:
     en_docs_path = Path("docs/en/docs")
-    assert not str(path).startswith(
-        str(en_docs_path)
-    ), f"Path must not be inside {en_docs_path}"
+    assert not str(path).startswith(str(en_docs_path)), (
+        f"Path must not be inside {en_docs_path}"
+    )
     lang_docs_path = Path(f"docs/{lang}/docs")
     out_path = Path(str(path).replace(str(lang_docs_path), str(en_docs_path)))
     return out_path
@@ -64,9 +64,9 @@ def translate_page(
     language: Annotated[str, typer.Option(envvar="LANGUAGE")],
     en_path: Annotated[Path, typer.Option(envvar="EN_PATH")],
 ) -> None:
-    assert (
-        language != "en"
-    ), "`en` is the source language, choose another language as translation target"
+    assert language != "en", (
+        "`en` is the source language, choose another language as translation target"
+    )
     langs = get_langs()
     language_name = langs[language]
     lang_path = Path(f"docs/{language}")
@@ -76,9 +76,9 @@ def translate_page(
     lang_prompt_content = lang_prompt_path.read_text(encoding="utf-8")
 
     en_docs_path = Path("docs/en/docs")
-    assert str(en_path).startswith(
-        str(en_docs_path)
-    ), f"Path must be inside {en_docs_path}"
+    assert str(en_path).startswith(str(en_docs_path)), (
+        f"Path must be inside {en_docs_path}"
+    )
     out_path = generate_lang_path(lang=language, path=en_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     original_content = en_path.read_text(encoding="utf-8")

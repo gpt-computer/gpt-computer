@@ -85,7 +85,7 @@ class SimpleAgent(BaseAgent):
             preprompts_holder=preprompts_holder or PrepromptsHolder(PREPROMPTS_PATH),
         )
 
-    @ trace_async_function("SimpleAgent", "init") if TRACING_AVAILABLE else lambda x: x
+    @trace_async_function("SimpleAgent", "init") if TRACING_AVAILABLE else lambda x: x
     async def init(self, prompt: Prompt) -> FilesDict:
         start_time = time.time()
 
@@ -131,9 +131,11 @@ class SimpleAgent(BaseAgent):
                 )
             raise
 
-    @ trace_async_function(
-        "SimpleAgent", "improve"
-    ) if TRACING_AVAILABLE else lambda x: x
+    @(
+        trace_async_function("SimpleAgent", "improve")
+        if TRACING_AVAILABLE
+        else lambda x: x
+    )
     async def improve(
         self,
         files_dict: FilesDict,

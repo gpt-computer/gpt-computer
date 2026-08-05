@@ -27,6 +27,7 @@ import traceback
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 # Context variable for correlation ID
@@ -253,6 +254,8 @@ def setup_structured_logging(
 
     # File handler
     if log_file:
+        log_path = Path(log_file)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
         file_handler = logging.FileHandler(log_file)
         file_handler.setLevel(logging.DEBUG)  # Always debug for files
         file_handler.setFormatter(formatter)

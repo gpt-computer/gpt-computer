@@ -94,9 +94,9 @@ class Config:
         gptcomputer_app_dict = config_dict.get("gptcomputer-app", {})
         gptcomputer_app = None
         if gptcomputer_app_dict:
-            assert (
-                "project_id" in gptcomputer_app_dict
-            ), "project_id is required in gptcomputer-app section"
+            assert "project_id" in gptcomputer_app_dict, (
+                "project_id is required in gptcomputer-app section"
+            )
             gptcomputer_app = _GptComputerAppConfig(
                 # required if gptcomputer-app section is present
                 project_id=gptcomputer_app_dict["project_id"],
