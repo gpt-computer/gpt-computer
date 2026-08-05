@@ -420,7 +420,7 @@ def main(
     )
 
 
-@trace_async_function("CLI", "main") if TRACING_AVAILABLE else lambda x: x
+@ trace_async_function("CLI", "main") if TRACING_AVAILABLE else lambda x: x
 async def _main(
     project_path: str,
     model: str,
@@ -493,9 +493,9 @@ async def _main(
     if use_cache:
         set_llm_cache(SQLiteCache(database_path=".langchain.db"))
     if improve_mode:
-        assert not (clarify_mode or lite_mode), (
-            "Clarify and lite mode are not active for improve mode"
-        )
+        assert not (
+            clarify_mode or lite_mode
+        ), "Clarify and lite mode are not active for improve mode"
 
     if llm_via_clipboard:
         ai = ClipboardAI()
