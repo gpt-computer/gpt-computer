@@ -2,11 +2,11 @@
 name = "gpt-computer"
 version = "0.1.1"
 description = "Specify what you want it to build, the AI asks for clarification, and then builds it."
-authors = [{name = "Md Sulaiman", email = "infosulaimanbd@gmail.com"}]
+authors = [{name = "Md Sulaiman", email = "dev.sulaiman@icloud.com"}]
 license = {text = "MIT"}
 readme = "README.md"
-homepage = "https://github.com/xeondesk/gpt-computer"
-repository = "https://github.com/xeondesk/gpt-computer"
+homepage = "https://github.com/gpt-computer/gpt-computer"
+repository = "https://github.com/gpt-computer/gpt-computer"
 documentation = "https://gpt-computer.readthedocs.io/en/latest/"
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -14,6 +14,7 @@ classifiers = [
 ]
 requires-python = ">=3.10,<4.0"
 dependencies = [
+    "aiofiles>=23.2.1",
     "backoff>=2.2.1",
     "black>=26.3.1",
     "fastapi>=0.135.2",
@@ -117,16 +118,18 @@ doc = [
 ]
 
 [tool.ruff]
-select = ["F", "E", "W", "I001"]
 show-fixes = false
 target-version = "py310"
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "I001"]
 task-tags = ["TODO", "FIXME"]
 extend-ignore = ["E501", "E722"]
 
 [tool.black]
 target-version = ["py310"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = []
 known-third-party = []
 section-order = [
