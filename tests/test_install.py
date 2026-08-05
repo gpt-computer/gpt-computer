@@ -64,9 +64,9 @@ def test_installation():
     result = subprocess.run([poetry_executable, "install"], capture_output=True)
 
     # Assert that the installation was successful.
-    assert (
-        result.returncode == 0
-    ), f"Install via poetry failed: {result.stderr.decode()}"
+    assert result.returncode == 0, (
+        f"Install via poetry failed: {result.stderr.decode()}"
+    )
 
 
 def test_cli_execution():
@@ -80,9 +80,9 @@ def test_cli_execution():
     )
 
     # Assert that the CLI command executed successfully.
-    assert (
-        result.returncode == 0
-    ), f"gpt-computer command failed with message: {result.stderr}"
+    assert result.returncode == 0, (
+        f"gpt-computer command failed with message: {result.stderr}"
+    )
 
 
 @pytest.mark.requires_key

@@ -85,7 +85,7 @@ class ReActAgent:
         # Fallback if no structured action found but no final answer either
         return {"thought": text}
 
-    @ trace_async_function("ReActAgent", "run") if TRACING_AVAILABLE else lambda x: x
+    @trace_async_function("ReActAgent", "run") if TRACING_AVAILABLE else lambda x: x
     async def run(self, question: str) -> str:
         start_time = time.time()
 

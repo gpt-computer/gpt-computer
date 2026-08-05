@@ -4,6 +4,7 @@ from typing import Any, List, Optional
 class MockAI:
     def __init__(self, response: List):
         self.responses = iter(response)
+        self.model_name = "mock-model"
 
     async def start(self, system: str, user: Any, *, step_name: str) -> List[str]:
         return [next(self.responses)]

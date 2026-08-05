@@ -46,6 +46,7 @@ from termcolor import colored
 from gpt_computer.applications.cli.cli_agent import CliAgent
 from gpt_computer.applications.cli.collect import collect_and_send_human_review
 from gpt_computer.applications.cli.file_selector import FileSelector
+from gpt_computer.codemap.cli import app as codemap_app
 from gpt_computer.core.ai import AI, ClipboardAI
 from gpt_computer.core.config import get_settings
 from gpt_computer.core.default.disk_execution_env import DiskExecutionEnv
@@ -63,6 +64,7 @@ from gpt_computer.core.git import stage_uncommitted_to_git
 from gpt_computer.core.logging_config import setup_logging
 from gpt_computer.core.preprompts_holder import PrepromptsHolder
 from gpt_computer.core.prompt import Prompt
+from gpt_computer.repository_intelligence.cli import app as repository_intelligence_app
 from gpt_computer.tools.custom_steps import clarified_gen, lite_gen, self_heal
 
 # Import structured logging and tracing if available
@@ -418,7 +420,7 @@ def main(
     )
 
 
-@ trace_async_function("CLI", "main") if TRACING_AVAILABLE else lambda x: x
+@trace_async_function("CLI", "main") if TRACING_AVAILABLE else lambda x: x
 async def _main(
     project_path: str,
     model: str,
@@ -491,9 +493,9 @@ async def _main(
     if use_cache:
         set_llm_cache(SQLiteCache(database_path=".langchain.db"))
     if improve_mode:
-        assert not (
-            clarify_mode or lite_mode
-        ), "Clarify and lite mode are not active for improve mode"
+        assert not (clarify_mode or lite_mode), (
+            "Clarify and lite mode are not active for improve mode"
+        )
 
     if llm_via_clipboard:
         ai = ClipboardAI()
@@ -635,6 +637,14 @@ async def _main(
                 total_time_ms=(time.time() - start_time) * 1000,
                 success=True,
             )
+
+
+app.add_typer(codemap_app, name="codemap", help="Analyze and visualize code structure")
+app.add_typer(
+    repository_intelligence_app,
+    name="repository",
+    help="Advanced repository intelligence and analysis",
+)
 
 
 @app.command(help="List all available projects in the projects/ folder.")

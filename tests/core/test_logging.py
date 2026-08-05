@@ -24,14 +24,20 @@ def test_memory_logging(tmp_path):
     assert "ERROR" in log_content
 
 
-def test_console_logging(caplog, tmp_path):
+def test_console_logging(caplog):
     # arrange
-    memory = DiskMemory(tmp_path)
-    setup_logging(verbose=True, memory=memory)
     logger = logging.getLogger("test_console")
 
+    # Clear existing handlers to avoid interference
+    logger.handlers.clear()
+    logger.propagate = False
+
+    # Add a caplog handler
+    handler = caplog.handler
+    logger.addHandler(handler)
+
     # act
-    with caplog.at_level(logging.INFO, logger="test_console"):
+    with caplog.at_level(logging.INFO):
         logger.info("Console message")
 
     # assert
