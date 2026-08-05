@@ -8,6 +8,7 @@
   <img src="https://img.shields.io/github/license/xeondesk/gpt-computer" />
   <img src="https://img.shields.io/github/v/release/xeondesk/gpt-computer" />
   <img src="https://img.shields.io/github/issues/xeondesk/gpt-computer" />
+  ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/gpt-computer/gpt-computer?utm_source=oss&utm_medium=github&utm_campaign=gpt-computer%2Fgpt-computer&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 </p>
 
 ---
