@@ -1,4 +1,5 @@
 import base64
+import inspect
 import io
 import logging
 import math
@@ -21,6 +22,15 @@ except ImportError:
     from langchain_community.callbacks.openai_info import (
         get_openai_token_cost_for_model,  # fmt: skip
     )
+
+# The cost helper's call signature changed across versions:
+#   older: get_openai_token_cost_for_model(model, num_tokens, is_completion=bool)
+#   newer: get_openai_token_cost_for_model(model, num_tokens, *, token_type=TokenType)
+_COST_MODEL_ACCEPTS_IS_COMPLETION = (
+    "is_completion" in inspect.signature(get_openai_token_cost_for_model).parameters
+)
+if not _COST_MODEL_ACCEPTS_IS_COMPLETION:
+    from langchain_community.callbacks.openai_info import TokenType
 
 
 Message = Union[AIMessage, HumanMessage, SystemMessage]
@@ -288,12 +298,28 @@ class TokenUsageLog:
         try:
             result = 0
             for log in self.log():
-                result += get_openai_token_cost_for_model(
-                    self.model_name, log.total_prompt_tokens, is_completion=False
-                )
-                result += get_openai_token_cost_for_model(
-                    self.model_name, log.total_completion_tokens, is_completion=True
-                )
+                if _COST_MODEL_ACCEPTS_IS_COMPLETION:
+                    result += get_openai_token_cost_for_model(
+                        self.model_name,
+                        log.total_prompt_tokens,
+                        is_completion=False,
+                    )
+                    result += get_openai_token_cost_for_model(
+                        self.model_name,
+                        log.total_completion_tokens,
+                        is_completion=True,
+                    )
+                else:
+                    result += get_openai_token_cost_for_model(
+                        self.model_name,
+                        log.total_prompt_tokens,
+                        token_type=TokenType.PROMPT,
+                    )
+                    result += get_openai_token_cost_for_model(
+                        self.model_name,
+                        log.total_completion_tokens,
+                        token_type=TokenType.COMPLETION,
+                    )
             return result
         except Exception as e:
             logger.error(f"Error calculating usage cost: {e}")
