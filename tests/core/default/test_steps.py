@@ -336,9 +336,9 @@ Some introductory text.
         config = {"line_length": 50}
         linted_files_dict = linting.lint_files(files_dict, config)
         assert linted_files_dict is not None, "Linted files dict should not be None"
-        assert isinstance(linted_files_dict, FilesDict), (
-            "Output should be an instance of FilesDict"
-        )
-        assert "test.py" in linted_files_dict, (
-            "test.py should be in the linted files dict"
-        )
+        assert isinstance(
+            linted_files_dict, FilesDict
+        ), "Output should be an instance of FilesDict"
+        assert (
+            "test.py" in linted_files_dict
+        ), "test.py should be in the linted files dict"
