@@ -15,6 +15,8 @@ try:
 except ImportError:
     aiohttp = None
 
+from gpt_computer.ai.client import AsyncClient
+from gpt_computer.ai.providers.response import JsonConversation, MediaResponse
 from gpt_computer.infrastructure import debug
 from gpt_computer.infrastructure.config.paths import CONFIG_DIR, COOKIES_DIR
 

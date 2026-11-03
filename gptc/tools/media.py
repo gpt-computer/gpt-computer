@@ -17,6 +17,7 @@ from gpt_computer.infrastructure.image import (
 )
 
 from ..typing import Messages
+from .files import read_bucket
 
 
 def render_media(

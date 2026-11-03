@@ -1,3 +1,4 @@
+import gptc
 from gpt_computer.infrastructure.cookies import read_cookie_files
 
 from ..gui import run_gui

@@ -87,6 +87,7 @@ from gpt_computer.ai.providers.any_model_map import (
     vision_models,
 )
 from gpt_computer.ai.providers.any_provider import AnyProvider
+from gpt_computer.ai.models.models import ImageModel, ModelUtils, VisionModel
 from gpt_computer.ai.providers.response import (
     AudioResponse,
     BaseConversation,
@@ -941,12 +942,8 @@ class Api:
                         "object": "model",
                         "created": 0,
                         "owned_by": "",
-                        "image": isinstance(
-                            model, gpt_computer.ai.models.models.ImageModel
-                        ),
-                        "vision": isinstance(
-                            model, gpt_computer.ai.models.models.VisionModel
-                        ),
+                        "image": isinstance(model, ImageModel),
+                        "vision": isinstance(model, VisionModel),
                         "provider": False,
                     }
                     for model in AnyProvider.get_models()
@@ -1077,10 +1074,8 @@ class Api:
             },
         )
         async def model_info(model_name: str) -> ModelResponseModel:
-            if model_name in gpt_computer.ai.models.models.ModelUtils.convert:
-                model_info = gpt_computer.ai.models.models.ModelUtils.convert[
-                    model_name
-                ]
+            if model_name in ModelUtils.convert:
+                model_info = ModelUtils.convert[model_name]
                 return JSONResponse(
                     {
                         "id": model_name,
