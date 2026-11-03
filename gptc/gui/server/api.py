@@ -1,3 +1,4 @@
+# ruff: noqa: F405
 from __future__ import annotations
 
 import asyncio
@@ -8,7 +9,7 @@ import os
 import threading
 
 from inspect import signature
-from typing import Iterator
+from typing import Iterator, Union
 
 from flask import request, send_from_directory
 
@@ -36,7 +37,7 @@ from ...Provider import ProviderLoader
 from ...providers.base_provider import ProviderModelMixin
 from ...providers.cache import FileStorage
 from ...providers.helper import format_media_prompt
-from ...providers.response import *
+from ...providers.response import *  # noqa: F403,F405
 from ...tools.run_tools import iter_run_tools
 from ...version import utils as version_utils
 
