@@ -66,7 +66,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-from pathlib import Path
+from pathlib import Path  # noqa: E402
 
 
 def get_screenshot_dir(datekey: str = None) -> str:
@@ -144,8 +144,8 @@ def find_chrome_path() -> Optional[str]:
     return None
 
 
-import atexit
-import threading
+import atexit  # noqa: E402
+import threading  # noqa: E402
 
 _shared_browser_process = None
 _shared_browser_port = None

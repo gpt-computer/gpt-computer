@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+import argparse
+import os
+import sys
+
+from argparse import ArgumentParser
+
 """
 This module defines the command-line interface (CLI) entrypoint for gptc,
 including:
@@ -12,13 +18,7 @@ It provides argument parsers for each mode and executes the appropriate
 runtime function depending on the CLI arguments.
 """
 
-import argparse
-import os
-import sys
-
-from argparse import ArgumentParser
-
-from gpt_computer.infrastructure.config.paths import (
+from gpt_computer.infrastructure.config.paths import (  # noqa: E402
     DEFAULT_PORT,
     DEFAULT_STREAM_TIMEOUT,
     DEFAULT_TIMEOUT,

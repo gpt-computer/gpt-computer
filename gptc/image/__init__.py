@@ -10,10 +10,10 @@ warnings.warn(
     stacklevel=2,
 )
 
-import sys
-import types
+import sys  # noqa: E402
+import types  # noqa: E402
 
-import gpt_computer.infrastructure.image as _new
+import gpt_computer.infrastructure.image as _new  # noqa: E402
 
 __path__ = list(_new.__path__)
 

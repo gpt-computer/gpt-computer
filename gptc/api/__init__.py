@@ -954,7 +954,7 @@ class Api:
                 HTTP_200_OK: {"model": List[ModelResponseModel]},
             },
         )
-        async def models(
+        async def models_by_provider(
             provider: str,
             credentials: Annotated[
                 HTTPAuthorizationCredentials, Depends(Api.security)
@@ -1678,7 +1678,7 @@ class Api:
                     )
 
         @self.app.get("/screenshot/{name:path}", responses=responses)
-        async def image_from_url(
+        async def image_from_name(
             name: str,
         ):
             safe_name = secure_filename(name)
@@ -2285,7 +2285,7 @@ class Api:
                 HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponseModel},
             },
         )
-        async def convert_url(request: Request, url: str):
+        async def convert_text_url(request: Request, url: str):
             """Convert a URL to Markdown using MarkItDown.
 
             The full URL (including scheme) is passed in the path, e.g.:

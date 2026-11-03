@@ -43,12 +43,12 @@ from .cdp_browser import CDPBrowser, CookieParam, _CdpShim as _cdp
 
 Browser = CDPBrowser
 
-from gpt_computer.infrastructure import debug
-from gpt_computer.infrastructure.cookies import BrowserConfig
+from gpt_computer.infrastructure import debug  # noqa: E402
+from gpt_computer.infrastructure.cookies import BrowserConfig  # noqa: E402
 
-from ..errors import MissingRequirementsError
-from ..typing import Cookies
-from .defaults import DEFAULT_HEADERS, WEBVIEW_HAEDERS
+from ..errors import MissingRequirementsError  # noqa: E402
+from ..typing import Cookies  # noqa: E402
+from .defaults import DEFAULT_HEADERS, WEBVIEW_HAEDERS  # noqa: E402
 
 if not has_curl_cffi:
 
