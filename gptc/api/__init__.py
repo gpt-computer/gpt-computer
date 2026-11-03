@@ -79,24 +79,16 @@ import gpt_computer.infrastructure.debug as debug
 import gptc
 
 from gpt_computer.ai.models.models import ImageModel, ModelUtils, VisionModel
-from gpt_computer.ai.providers.any_model_map import (
-    audio_models as _audio_models,
-    image_models as _image_models,
-    model_map as _model_map,
-    video_models as _video_models,
-    vision_models as _vision_models,
-)
+
 from gpt_computer.ai.providers.any_provider import AnyProvider
 from gpt_computer.ai.providers.response import (
     AudioResponse,
     BaseConversation,
     JsonConversation,
 )
-from gpt_computer.ai.providers.types import ProviderType as _ProviderType
+
 from gpt_computer.infrastructure.config.paths import (
     DEFAULT_PORT,
-    DEFAULT_STREAM_TIMEOUT as _DEFAULT_STREAM_TIMEOUT,
-    DEFAULT_TIMEOUT as _DEFAULT_TIMEOUT,
     AppConfig,
 )
 from gpt_computer.infrastructure.cookies import get_cookies_dir, read_cookie_files

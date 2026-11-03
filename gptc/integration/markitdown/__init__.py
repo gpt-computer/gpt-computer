@@ -401,13 +401,13 @@ class MarkItDown(BaseMarkItDown):
             )
             lines = []
             empty = 0
-            for l in [
-                l
-                for l in result.text_content.splitlines()
-                if l.strip() not in GITHUB_SKIP_LINES
-                and not l.strip().startswith(tuple(GITHUB_STARTS_WITH))
+            for line in [
+                line
+                for line in result.text_content.splitlines()
+                if line.strip() not in GITHUB_SKIP_LINES
+                and not line.strip().startswith(tuple(GITHUB_STARTS_WITH))
             ]:
-                striped = l.strip()
+                striped = line.strip()
                 if striped == "":
                     empty += 1
                 else:

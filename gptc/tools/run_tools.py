@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Tuple, Union
 
 try:
-    from aiofile import async_open
-
+    from aiofile import async_open  # noqa: F401
+    async_open  # noqa: F401
     has_aiofile = True
 except ImportError:
     has_aiofile = False

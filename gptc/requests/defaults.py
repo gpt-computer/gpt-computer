@@ -1,6 +1,6 @@
 try:
-    import brotli
-
+    import brotli  # noqa: F401
+    brotli  # noqa: F401
     has_brotli = True
 except ImportError:
     has_brotli = False

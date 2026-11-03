@@ -2,27 +2,21 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
-import random
-import time
-
-from collections.abc import Callable
 from contextlib import asynccontextmanager
 from http.cookies import Morsel
-from pathlib import Path
 from typing import AsyncIterator, Iterator, Optional
 from urllib.parse import urlparse
 
 try:
     from curl_cffi.requests import Response, Session
 
-    from .curl_cffi import FormData, StreamResponse, StreamSession
+    from .curl_cffi import StreamSession
 
     has_curl_cffi = True
 except ImportError:
     from typing import Type as Response
 
-    from .aiohttp import FormData, StreamResponse, StreamSession
+
 
     has_curl_cffi = False
 try:
@@ -32,8 +26,8 @@ try:
 except ImportError:
     has_webview = False
 try:
-    from platformdirs import user_config_dir
-
+    from platformdirs import user_config_dir  # noqa: F401
+    user_config_dir  # noqa: F401
     has_platformdirs = True
 except ImportError:
     has_platformdirs = False
@@ -50,19 +44,19 @@ from .cdp_browser import (
     CDPTab,
     CookieParam,
     _CdpShim as _cdp,
-    get_cookie_params_from_dict as _get_cookie_params_from_dict_cdp,
+
 )
 
 Browser = CDPBrowser
 
 from gpt_computer.infrastructure import debug
-from gpt_computer.infrastructure.cookies import BrowserConfig, get_cookies_dir
+from gpt_computer.infrastructure.cookies import BrowserConfig
 
 from ..errors import MissingRequirementsError
 from ..typing import Cookies
-from .aiohttp import close_shared_connectors, get_shared_connector
+
 from .defaults import DEFAULT_HEADERS, WEBVIEW_HAEDERS
-from .raise_for_status import raise_for_status
+
 
 if not has_curl_cffi:
 
