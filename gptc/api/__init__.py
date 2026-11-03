@@ -16,7 +16,7 @@ import time
 from collections import deque
 from contextlib import asynccontextmanager
 from email.utils import formatdate
-from urllib.parse import quote_plus, unquote_plus
+from urllib.parse import unquote_plus
 
 import uvicorn
 
@@ -50,7 +50,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBasic, HTTPBearer
 from starlette.background import BackgroundTask
-from starlette.responses import FileResponse
 from starlette.staticfiles import NotModifiedResponse
 
 try:
@@ -79,25 +78,25 @@ except ImportError:
 import gpt_computer.infrastructure.debug as debug
 import gptc
 
+from gpt_computer.ai.models.models import ImageModel, ModelUtils, VisionModel
 from gpt_computer.ai.providers.any_model_map import (
-    audio_models,
-    image_models,
-    model_map,
-    video_models,
-    vision_models,
+    audio_models as _audio_models,
+    image_models as _image_models,
+    model_map as _model_map,
+    video_models as _video_models,
+    vision_models as _vision_models,
 )
 from gpt_computer.ai.providers.any_provider import AnyProvider
-from gpt_computer.ai.models.models import ImageModel, ModelUtils, VisionModel
 from gpt_computer.ai.providers.response import (
     AudioResponse,
     BaseConversation,
     JsonConversation,
 )
-from gpt_computer.ai.providers.types import ProviderType
+from gpt_computer.ai.providers.types import ProviderType as _ProviderType
 from gpt_computer.infrastructure.config.paths import (
     DEFAULT_PORT,
-    DEFAULT_STREAM_TIMEOUT,
-    DEFAULT_TIMEOUT,
+    DEFAULT_STREAM_TIMEOUT as _DEFAULT_STREAM_TIMEOUT,
+    DEFAULT_TIMEOUT as _DEFAULT_TIMEOUT,
     AppConfig,
 )
 from gpt_computer.infrastructure.cookies import get_cookies_dir, read_cookie_files
@@ -146,7 +145,6 @@ from .stubs import (
 try:
     from gptc.gui.server.crypto import (
         create_or_read_keys,
-        decrypt_data,
         get_session_key,
     )
 
@@ -855,7 +853,7 @@ class Api:
             )
         if has_crypto:
             private_key, _ = create_or_read_keys()
-            session_key = get_session_key()
+            get_session_key()
 
         @self.app.middleware("http")
         async def authorization(request: Request, call_next):

@@ -1239,7 +1239,7 @@ class CDPSession:
                 }
             }
             if (!cfIframe) return null;
-            
+
             const rect = cfIframe.getBoundingClientRect();
             return {
                 x: rect.left + window.scrollX,
@@ -1420,12 +1420,12 @@ const fieldSelectors = [
     // If that fails, force React/Vue state update
     // This triggers the underlying setter that frameworks use
     const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLElement.prototype, 
+        window.HTMLElement.prototype,
         'innerText'
     ).set;
 
     nativeInputValueSetter.call(editor, searchQuery);
-    
+
     // Dispatch events to notify the framework
     editor.dispatchEvent(new Event('keyup', { bubbles: true }));
     editor.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1455,7 +1455,7 @@ if (sendButton) {
 
 // Click the send button on gemini.google.com
 const geminiSendButton = document.querySelector(`.send-button`);
-if (geminiSendButton) {   
+if (geminiSendButton) {
     setTimeout(() => {
         geminiSendButton.dispatchEvent(new Event('click', {bubbles: true}));
     }, 1000);
