@@ -1,44 +1,21 @@
-import json
+"""
+Prompt Module
 
-from typing import Dict, Optional
+.. deprecated:: 0.3.0
+    Importing from 'gpt_computer.core.prompt' is deprecated. Use
+    'from gpt_computer.agent import Prompt' instead.
+"""
 
+import warnings
 
-class Prompt:
-    def __init__(
-        self,
-        text: str,
-        image_urls: Optional[Dict[str, str]] = None,
-        entrypoint_prompt: str = "",
-    ):
-        self.text = text
-        self.image_urls = image_urls
-        self.entrypoint_prompt = entrypoint_prompt
+warnings.warn(
+    "Importing from 'gpt_computer.core.prompt' is deprecated and will be removed in version 1.0.0. "
+    "Use 'from gpt_computer.agent import Prompt' instead. "
+    "See MIGRATION_GUIDE.md for details.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-    def __repr__(self):
-        return f"Prompt(text={self.text!r}, image_urls={self.image_urls!r})"
+from gpt_computer.agent.prompt import Prompt  # noqa: E402
 
-    def to_langchain_content(self):
-        content = [{"type": "text", "text": f"Request: {self.text}"}]
-
-        if self.image_urls:
-            for name, url in self.image_urls.items():
-                image_content = {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": url,
-                        "detail": "low",
-                    },
-                }
-                content.append(image_content)
-
-        return content
-
-    def to_dict(self):
-        return {
-            "text": self.text,
-            "image_urls": self.image_urls,
-            "entrypoint_prompt": self.entrypoint_prompt,
-        }
-
-    def to_json(self):
-        return json.dumps(self.to_dict())
+__all__ = ["Prompt"]

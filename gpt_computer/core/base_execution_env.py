@@ -1,42 +1,21 @@
-from abc import ABC, abstractmethod
-from subprocess import Popen
-from typing import Optional, Tuple
+"""
+Base Execution Environment Module
 
-from gpt_computer.core.files_dict import FilesDict
+.. deprecated:: 0.3.0
+    Importing from 'gpt_computer.core.base_execution_env' is deprecated. Use
+    'from gpt_computer.execution import BaseExecutionEnv' instead.
+"""
 
+import warnings
 
-class BaseExecutionEnv(ABC):
-    """
-    Abstract base class for an execution environment capable of running code.
+warnings.warn(
+    "Importing from 'gpt_computer.core.base_execution_env' is deprecated and will be removed in version 1.0.0. "
+    "Use 'from gpt_computer.execution import BaseExecutionEnv' instead. "
+    "See MIGRATION_GUIDE.md for details.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-    This class defines the interface for execution environments that can execute commands,
-    handle processes, and manage file uploads and downloads.
-    """
+from gpt_computer.execution.base import BaseExecutionEnv  # noqa: E402
 
-    @abstractmethod
-    def run(self, command: str, timeout: Optional[int] = None) -> Tuple[str, str, int]:
-        """
-        Runs a command in the execution environment.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def popen(self, command: str) -> Popen:
-        """
-        Runs a command in the execution environment.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def upload(self, files: FilesDict) -> "BaseExecutionEnv":
-        """
-        Uploads files to the execution environment.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def download(self) -> FilesDict:
-        """
-        Downloads files from the execution environment.
-        """
-        raise NotImplementedError
+__all__ = ["BaseExecutionEnv"]

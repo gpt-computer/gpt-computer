@@ -19,11 +19,19 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+import warnings
 
 from enum import Enum
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from gpt_computer.core.orchestration.models import AuditTrail, utcnow_iso
+
+warnings.warn(
+    "Importing from 'gpt_computer.core.orchestration.human_in_the_loop' is deprecated and will be removed in version 1.0.0. "
+    "See MIGRATION_GUIDE.md for details.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 
 class ApprovalStatus(Enum):

@@ -1,32 +1,21 @@
 """
 Base Agent Module
 
-This module provides an abstract base class for an agent that interacts with code. It defines the interface
-for agents capable of initializing and improving code based on a given prompt. Implementations of this class
-are expected to provide concrete methods for these actions.
-
-Classes:
-    BaseAgent: Abstract base class for an agent that interacts with code.
+.. deprecated:: 0.3.0
+    Importing from 'gpt_computer.core.base_agent' is deprecated. Use
+    'from gpt_computer.agent import BaseAgent' instead.
 """
 
-from abc import ABC, abstractmethod
+import warnings
 
-from gpt_computer.core.files_dict import FilesDict
-from gpt_computer.core.prompt import Prompt
+warnings.warn(
+    "Importing from 'gpt_computer.core.base_agent' is deprecated and will be removed in version 1.0.0. "
+    "Use 'from gpt_computer.agent import BaseAgent' instead. "
+    "See MIGRATION_GUIDE.md for details.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
+from gpt_computer.agent.base import BaseAgent  # noqa: E402
 
-class BaseAgent(ABC):
-    """
-    Abstract base class for an agent that interacts with code.
-
-    Defines the interface for agents capable of initializing and improving code based on a given prompt.
-    Implementations of this class are expected to provide concrete methods for these actions.
-    """
-
-    @abstractmethod
-    async def init(self, prompt: Prompt) -> FilesDict:
-        pass
-
-    @abstractmethod
-    async def improve(self, files_dict: FilesDict, prompt: Prompt) -> FilesDict:
-        pass
+__all__ = ["BaseAgent"]

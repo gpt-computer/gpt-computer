@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "gpt-computer": {
+      "command": "python",
+      "args": ["-m", "gptc.mcp"],
+      "description": "gpt-computer MCP server providing web search, scraping, and image generation"
+    }
+  }
+}

@@ -6,11 +6,20 @@ for code. Implementations of this class are expected to provide methods to creat
 code and return a reference to it.
 """
 
+import warnings
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Union
 
-from gpt_computer.core.files_dict import FilesDict
+warnings.warn(
+    "Importing from 'gpt_computer.core.version_manager' is deprecated and will be removed in version 1.0.0. "
+    "See MIGRATION_GUIDE.md for details.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+from gpt_computer.core.files_dict import FilesDict  # noqa: E402
 
 
 class BaseVersionManager(ABC):

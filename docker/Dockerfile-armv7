@@ -1,0 +1,53 @@
+FROM python:slim-bookworm
+
+ARG GPTC_VERSION
+ARG GPTC_USER=gptc
+ARG GPTC_USER_ID=1000
+
+ENV GPTC_VERSION $GPTC_VERSION
+ENV GPTC_USER $GPTC_USER
+ENV GPTC_USER_ID $GPTC_USER_ID
+ENV GPTC_DIR /app
+
+RUN apt-get update && apt-get upgrade -y \
+  && apt-get install -y git curl \
+  && apt-get install --quiet --yes --no-install-recommends \
+      build-essential libffi-dev zlib1g-dev libjpeg-dev libssl-dev pkg-config \
+# Add user and user group
+  && groupadd -g $GPTC_USER_ID $GPTC_USER \
+  && useradd -rm -G sudo -u $GPTC_USER_ID -g $GPTC_USER_ID $GPTC_USER \
+  && mkdir -p /var/log/supervisor \
+  && chown "${GPTC_USER_ID}:${GPTC_USER_ID}" /var/log/supervisor \
+  && echo "${GPTC_USER}:${GPTC_USER}" | chpasswd
+
+USER $GPTC_USER_ID
+WORKDIR $GPTC_DIR
+
+ENV HOME /home/$GPTC_USER
+ENV PATH "${HOME}/.local/bin:${HOME}/.cargo/bin:${PATH}"
+
+# Install rust toolchain
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+
+# Create app dir and copy the project's requirements file into it
+RUN mkdir -p $GPTC_DIR
+COPY requirements-min.txt $GPTC_DIR
+COPY requirements-slim.txt $GPTC_DIR
+
+# Upgrade pip for the latest features and install the project's Python dependencies.
+RUN pip install --no-cache-dir -r requirements-min.txt
+RUN cat requirements-slim.txt | xargs -n 1 timeout 5m pip install --no-cache-dir || true 
+
+USER root
+
+# Clean up build deps
+RUN rm --recursive --force "${HOME}/.rustup"
+RUN apt-get purge --auto-remove --yes \
+    build-essential \
+  && apt-get clean \
+  && rm --recursive --force /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+USER $GPTC_USER_ID
+
+# Copy the entire package into the container.
+ADD --chown=$GPTC_USER:$GPTC_USER gptc $GPTC_DIR/gptc

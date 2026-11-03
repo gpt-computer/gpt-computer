@@ -20,11 +20,19 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
+import warnings
 
 from collections import deque
 from typing import Any, Callable, Deque, Dict, List, Optional
 
 from gpt_computer.core.orchestration.models import AgentMessage, AuditTrail, new_id
+
+warnings.warn(
+    "Importing from 'gpt_computer.core.orchestration.messaging' is deprecated and will be removed in version 1.0.0. "
+    "See MIGRATION_GUIDE.md for details.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 MessageHandler = Callable[..., Any]
 SubscriptionToken = str

@@ -28,10 +28,10 @@ from typing import Annotated, Optional
 
 import typer
 
-from langchain.globals import set_llm_cache
+from dotenv import load_dotenv
 from langchain_community.cache import SQLiteCache
+from langchain_core.globals import set_llm_cache
 
-from gpt_computer.applications.cli.main import load_env_if_needed
 from gpt_computer.benchmark.bench_config import BenchConfig
 from gpt_computer.benchmark.benchmarks.load import get_benchmark
 from gpt_computer.benchmark.run import export_yaml_results, print_results, run
@@ -116,7 +116,7 @@ def main(
     """
     if use_cache:
         set_llm_cache(SQLiteCache(database_path=".langchain.db"))
-    load_env_if_needed()
+    load_dotenv()
     config = BenchConfig.from_toml(bench_config)
     print("using config file: " + bench_config)
     benchmarks = list()

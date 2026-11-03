@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+# Install Python dependencies
+pip3 install --break-system-packages aiohttp requests brotli pycryptodome nest-asyncio2
+
+# Make gptc command available
+if [ ! -L /usr/local/bin/gptc ]; then
+    ln -s /usr/bin/gptc /usr/local/bin/gptc
+fi
+
+echo "gptc installed successfully"
+echo "Usage: gptc --help"

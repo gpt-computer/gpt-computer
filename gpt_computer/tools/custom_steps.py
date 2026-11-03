@@ -1,13 +1,14 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 
 from platform import platform
 from sys import version_info
-from typing import List, Union
+from typing import TYPE_CHECKING, List, Union
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from gpt_computer.core.ai import AI
 from gpt_computer.core.base_execution_env import BaseExecutionEnv
 from gpt_computer.core.base_memory import BaseMemory
 from gpt_computer.core.chat_to_files import chat_to_files_dict
@@ -41,6 +42,9 @@ def get_platform_info() -> str:
 
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from gpt_computer.ai.client import AI
 
 
 async def self_heal(

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import warnings
 
 from typing import Any, Dict, List, Optional
 
@@ -28,6 +29,13 @@ from gpt_computer.core.orchestration.models import (
     AgentStatus,
     AuditTrail,
     utcnow_iso,
+)
+
+warnings.warn(
+    "Importing from 'gpt_computer.core.orchestration.agent_coordinator' is deprecated and will be removed in version 1.0.0. "
+    "See MIGRATION_GUIDE.md for details.",
+    DeprecationWarning,
+    stacklevel=2,
 )
 
 
@@ -61,8 +69,14 @@ class AgentCoordinator:
         self.audit = audit
         self.approvals = approvals
         self._agents: Dict[str, AgentHandle] = {}
-        self._lock = asyncio.Lock()
+        self._lock: Optional[asyncio.Lock] = None
         self._registrations: Dict[str, str] = {}
+
+    def _get_lock(self) -> asyncio.Lock:
+        """Lazily initialize the lock when first needed (avoid event loop error in Python 3.9)."""
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
 
     # ------------------------------------------------------------------ #
     # Registration
@@ -234,7 +248,7 @@ class AgentCoordinator:
         Respects ``max_concurrency`` and agent status. Returns the handle on
         success, None otherwise (the caller should pick another candidate).
         """
-        async with self._lock:
+        async with self._get_lock():
             handle = self._agents.get(agent_id)
             if handle is None or not handle.available:
                 return None

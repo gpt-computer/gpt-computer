@@ -15,31 +15,41 @@ Functions:
 
 from __future__ import annotations
 
-import asyncio
-import json
-import logging
-import os
+import warnings
 
-from pathlib import Path
-from typing import Any, List, Optional, Union
+warnings.warn(
+    "Importing from 'gpt_computer.core.ai' is deprecated and will be removed in version 1.0.0. "
+    "Use 'from gpt_computer.ai.client import ...' instead. "
+    "See MIGRATION_GUIDE.md for details.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-import backoff
-import openai
-import pyperclip
+import asyncio  # noqa: E402
+import json  # noqa: E402
+import logging  # noqa: E402
+import os  # noqa: E402
 
-from langchain_anthropic import ChatAnthropic
-from langchain_core.callbacks import (
+from pathlib import Path  # noqa: E402
+from typing import Any, List, Optional, Union  # noqa: E402
+
+import backoff  # noqa: E402
+import openai  # noqa: E402
+import pyperclip  # noqa: E402
+
+from langchain_anthropic import ChatAnthropic  # noqa: E402
+from langchain_core.callbacks import (  # noqa: E402
     StdOutCallbackHandler as StreamingStdOutCallbackHandler,
 )
-from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import (
+from langchain_core.language_models.chat_models import BaseChatModel  # noqa: E402
+from langchain_core.messages import (  # noqa: E402
     AIMessage,
     HumanMessage,
     SystemMessage,
     messages_from_dict,
     messages_to_dict,
 )
-from langchain_openai import AzureChatOpenAI, ChatOpenAI
+from langchain_openai import AzureChatOpenAI, ChatOpenAI  # noqa: E402
 
 try:
     from langchain_google_genai import ChatGoogleGenerativeAI
@@ -58,15 +68,19 @@ try:
 except ImportError:
     ChatCohere = None
 
-from gpt_computer.core.token_usage import TokenUsageLog
-
 # Import structured logging if available
 try:
-    from gpt_computer.core.structured_logging import get_logger
+    from gpt_computer.core.structured_logging import get_logger  # noqa: E402
 
     STRUCTURED_LOGGING_AVAILABLE = True
 except ImportError:
     STRUCTURED_LOGGING_AVAILABLE = False
+
+# Import token usage logging if available
+try:
+    from gpt_computer.core.token_usage import TokenUsageLog  # noqa: E402
+except ImportError:
+    TokenUsageLog = None  # type: ignore
 
 # Type hint for a chat message
 Message = Union[AIMessage, HumanMessage, SystemMessage]
@@ -145,7 +159,7 @@ class AI:
             or ("claude" in model_name)
         )
         self.llm = self._create_chat_model()
-        self.token_usage_log = TokenUsageLog(model_name)
+        self.token_usage_log = TokenUsageLog(model_name) if TokenUsageLog else None
 
         # Initialize structured logger if available
         if STRUCTURED_LOGGING_AVAILABLE:
@@ -491,7 +505,7 @@ class ClipboardAI(AI):
     # Ignore not init superclass
     def __init__(self, **_):  # type: ignore
         self.vision = False
-        self.token_usage_log = TokenUsageLog("clipboard_llm")
+        self.token_usage_log = TokenUsageLog("clipboard_llm") if TokenUsageLog else None
 
     @staticmethod
     def serialize_messages(messages: List[Message]) -> str:

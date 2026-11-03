@@ -49,13 +49,17 @@ class TestOnDiskExecutionEnv(unittest.TestCase):
             "script.py": "print('This is a test script')",
         }
         with patch("subprocess.Popen") as mock_popen:
-            mock_process = MagicMock()
-            mock_process.poll.side_effect = KeyboardInterrupt
-            mock_popen.return_value = mock_process
-            stdout_full, stderr_full, returncode = self.env.upload(FilesDict(code)).run(
-                f"bash {ENTRYPOINT_FILE}"
-            )
-            mock_process.kill.assert_called_once()
+            with patch(
+                "gpt_computer.execution.local._kill_process_tree"
+            ) as mock_kill_tree:
+                mock_process = MagicMock()
+                mock_process.communicate.side_effect = [KeyboardInterrupt, ("", "")]
+                mock_process.returncode = 0
+                mock_popen.return_value = mock_process
+                stdout_full, stderr_full, returncode = self.env.upload(
+                    FilesDict(code)
+                ).run(f"bash {ENTRYPOINT_FILE}")
+                mock_kill_tree.assert_called_once_with(mock_process)
 
     def test_execution_with_output(self):
         entrypoint_content = """

@@ -1,0 +1,44 @@
+"""
+Bootstrap the gptc Flask GUI server inside the Android app.
+
+MainActivity extracts the bundled gptc package and GUI assets from the APK
+into filesDir/app, then calls main(app_root, port) here. This module sets
+up the environment and runs the server on 127.0.0.1:<port>.
+"""
+from __future__ import annotations
+
+import os
+import sys
+
+
+def _log(*args):
+    print("[gptc-bootstrap]", *args, flush=True)
+
+
+def main(app_root: str, port: int) -> None:
+    _log("starting, app_root=", app_root, "port=", port)
+
+    # HOME must be writable for gptc config (~/.gptc). Chaquopy sets it to the
+    # app's internal storage dir already, but be defensive.
+    if "HOME" not in os.environ or not os.path.isdir(os.environ.get("HOME", "")):
+        os.environ["HOME"] = app_root
+
+    os.environ["GPTC_VERSION"] = "0.1.0-android"
+    os.environ["GPTC_API_HOST"] = "127.0.0.1"
+    os.environ["GPTC_API_PORT"] = str(port)
+    os.environ["GPTC_NO_VERSION_CHECK"] = "1"
+    # gptc resolves DIST_DIR relative to CWD: ./gptc.dev/dist
+    os.chdir(app_root)
+    if app_root not in sys.path:
+        sys.path.insert(0, app_root)
+
+    _log("importing gptc.gui ...")
+    import gptc.gui  # noqa: E402
+
+    _log("creating GUI app ...")
+    app = gptc.gui.get_gui_app()
+    app.debug = False
+
+    _log(f"serving on 127.0.0.1:{port}")
+    # Werkzeug dev server is fine for a local, single-user app.
+    app.run(host="127.0.0.1", port=port, debug=False, use_reloader=False, threaded=True)

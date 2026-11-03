@@ -1,0 +1,26 @@
+# ruff: noqa: F403
+"""Compatibility shim for the legacy ``gptc.providers.any_provider`` module."""
+
+import warnings
+
+warnings.warn(
+    "Importing from 'gptc.providers.any_provider' is deprecated and will be removed in version 1.0.0. "
+    "Use 'from gpt_computer.ai.providers.any_provider import ...' instead. "
+    "See MIGRATION_GUIDE.md for details.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+from gpt_computer.ai.providers.any_provider import (  # noqa: E402,F401
+    AnyModelProviderMixin,
+    AnyProvider,
+    DefaultProvider,
+    clean_name,
+)
+
+__all__ = [
+    "AnyModelProviderMixin",
+    "AnyProvider",
+    "DefaultProvider",
+    "clean_name",
+]

@@ -1,0 +1,336 @@
+"""
+Agent Steps Module
+
+Functions for generating and improving code using AI.
+
+Functions:
+    curr_fn, setup_sys_prompt, setup_sys_prompt_existing_code,
+    gen_code, gen_entrypoint, execute_entrypoint, improve_fn,
+    salvage_correct_hunks, handle_improve_mode
+"""
+
+from __future__ import annotations
+
+import asyncio
+import inspect
+import io
+import logging
+import re
+import sys
+import traceback
+
+from pathlib import Path
+from typing import TYPE_CHECKING, List, MutableMapping, Union
+
+import typer
+
+from langchain_core.messages import HumanMessage, SystemMessage
+from termcolor import colored
+
+from gpt_computer.agent.default.constants import MAX_EDIT_REFINEMENT_STEPS
+from gpt_computer.agent.default.paths import (
+    CODE_GEN_LOG_FILE,
+    DEBUG_LOG_FILE,
+    DIFF_LOG_FILE,
+    ENTRYPOINT_FILE,
+    ENTRYPOINT_LOG_FILE,
+    IMPROVE_LOG_FILE,
+)
+from gpt_computer.agent.memory.base import BaseMemory
+from gpt_computer.agent.pp_holder import PrepromptsHolder
+from gpt_computer.agent.prompt import Prompt
+from gpt_computer.agent.tools.chat_to_files import (
+    apply_diffs,
+    chat_to_files_dict,
+    parse_diffs,
+)
+from gpt_computer.execution.base import BaseExecutionEnv
+from gpt_computer.infrastructure.files.operations import FilesDict, file_to_lines_dict
+
+logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from gpt_computer.ai.client import AI
+
+
+def curr_fn() -> str:
+    """
+    Returns the name of the current function.
+
+    Returns
+    -------
+    str
+        The name of the function that called this function.
+    """
+    return inspect.stack()[1].function
+
+
+def setup_sys_prompt(preprompts: MutableMapping[Union[str, Path], str]) -> str:
+    """
+    Sets up the system prompt for generating code.
+
+    Parameters
+    ----------
+    preprompts : MutableMapping[Union[str, Path], str]
+        A mapping of preprompt messages to guide the AI model.
+
+    Returns
+    -------
+    str
+        The system prompt message for the AI model.
+    """
+    return (
+        preprompts["roadmap"]
+        + preprompts["generate"].replace("FILE_FORMAT", preprompts["file_format"])
+        + "\nUseful to know:\n"
+        + preprompts["philosophy"]
+    )
+
+
+def setup_sys_prompt_existing_code(
+    preprompts: MutableMapping[Union[str, Path], str],
+) -> str:
+    """
+    Sets up the system prompt for improving existing code.
+
+    Parameters
+    ----------
+    preprompts : MutableMapping[Union[str, Path], str]
+        A mapping of preprompt messages to guide the AI model.
+
+    Returns
+    -------
+    str
+        The system prompt message for the AI model to improve existing code.
+    """
+    return (
+        preprompts["roadmap"]
+        + preprompts["improve"].replace("FILE_FORMAT", preprompts["file_format_diff"])
+        + "\nUseful to know:\n"
+        + preprompts["philosophy"]
+    )
+
+
+async def gen_code(
+    ai: AI, prompt: Prompt, memory: BaseMemory, preprompts_holder: PrepromptsHolder
+) -> FilesDict:
+    """
+    Generates code from a prompt using AI and returns the generated files.
+    """
+    preprompts = preprompts_holder.get_preprompts()
+    messages = await ai.start(
+        setup_sys_prompt(preprompts), prompt.to_langchain_content(), step_name=curr_fn()
+    )
+    chat = messages[-1].content.strip()
+    memory.log(CODE_GEN_LOG_FILE, "\n\n".join(x.pretty_repr() for x in messages))
+    files_dict = chat_to_files_dict(chat)
+    return files_dict
+
+
+async def gen_entrypoint(
+    ai: AI,
+    prompt: Prompt,
+    files_dict: FilesDict,
+    memory: BaseMemory,
+    preprompts_holder: PrepromptsHolder,
+) -> FilesDict:
+    """
+    Generates an entrypoint for the codebase and returns the entrypoint files.
+    """
+    user_prompt = prompt.entrypoint_prompt
+    if not user_prompt:
+        user_prompt = """
+        Make a unix script that
+        a) installs dependencies
+        b) runs all necessary parts of the codebase (in parallel if necessary)
+        """
+    preprompts = preprompts_holder.get_preprompts()
+    messages = await ai.start(
+        system=(preprompts["entrypoint"]),
+        user=user_prompt
+        + "\nInformation about the codebase:\n\n"
+        + files_dict.to_chat(),
+        step_name=curr_fn(),
+    )
+    chat = messages[-1].content.strip()
+    regex_pattern = r"```\S*\n(.+?)```"
+    matches = re.finditer(regex_pattern, chat, re.DOTALL)
+    entrypoint_code = FilesDict(
+        {ENTRYPOINT_FILE: "\n".join(match.group(1) for match in matches)}
+    )
+    memory.log(ENTRYPOINT_LOG_FILE, "\n\n".join(x.pretty_repr() for x in messages))
+    return entrypoint_code
+
+
+async def execute_entrypoint(
+    ai: AI,
+    execution_env: BaseExecutionEnv,
+    files_dict: FilesDict,
+    prompt: Prompt = None,
+    preprompts_holder: PrepromptsHolder = None,
+    memory: BaseMemory = None,
+) -> FilesDict:
+    """
+    Executes the entrypoint of the codebase.
+    """
+    if ENTRYPOINT_FILE not in files_dict:
+        raise FileNotFoundError(
+            "The required entrypoint "
+            + ENTRYPOINT_FILE
+            + " does not exist in the code."
+        )
+
+    command = files_dict[ENTRYPOINT_FILE]
+
+    typer.echo()
+    typer.echo(
+        colored(
+            "Do you want to execute this code? (Y/n)",
+            "red",
+        )
+    )
+    typer.echo()
+    typer.echo(command)
+    typer.echo()
+
+    loop = asyncio.get_event_loop()
+    user_input = await loop.run_in_executor(None, input, "")
+
+    if user_input.lower() not in ["", "y", "yes"]:
+        typer.echo("Ok, not executing the code.")
+        return files_dict
+    typer.echo("Executing the code...")
+    typer.echo()
+    typer.echo(
+        colored(
+            "Note: If it does not work as expected, consider running the code"
+            + " in another way than above.",
+            "green",
+        )
+    )
+    typer.echo()
+    typer.echo("You can press ctrl+c *once* to stop the execution.")
+    typer.echo()
+
+    execution_env.upload(files_dict).run(f"bash {ENTRYPOINT_FILE}")
+    return files_dict
+
+
+async def improve_fn(
+    ai: AI,
+    prompt: Prompt,
+    files_dict: FilesDict,
+    memory: BaseMemory,
+    preprompts_holder: PrepromptsHolder,
+    diff_timeout=3,
+) -> FilesDict:
+    """
+    Improves the code based on user input and returns the updated files.
+    """
+    preprompts = preprompts_holder.get_preprompts()
+    messages = [
+        SystemMessage(content=setup_sys_prompt_existing_code(preprompts)),
+    ]
+
+    # Add files as input
+    messages.append(HumanMessage(content=f"{files_dict.to_chat()}"))
+    messages.append(HumanMessage(content=prompt.to_langchain_content()))
+    memory.log(
+        DEBUG_LOG_FILE,
+        "UPLOADED FILES:\n" + files_dict.to_log() + "\nPROMPT:\n" + prompt.text,
+    )
+    return await _improve_loop(
+        ai, files_dict, memory, messages, diff_timeout=diff_timeout
+    )
+
+
+async def _improve_loop(
+    ai: AI, files_dict: FilesDict, memory: BaseMemory, messages: List, diff_timeout=3
+) -> FilesDict:
+    messages = await ai.next(messages, step_name=curr_fn())
+    files_dict, errors = salvage_correct_hunks(
+        messages, files_dict, memory, diff_timeout=diff_timeout
+    )
+
+    retries = 0
+    while errors and retries < MAX_EDIT_REFINEMENT_STEPS:
+        messages.append(
+            HumanMessage(
+                content="Some previously produced diffs were not on the requested format, or the code part was not found in the code. Details:\n"
+                + "\n".join(errors)
+                + "\n Only rewrite the problematic diffs, making sure that the failing ones are now on the correct format and can be found in the code. Make sure to not repeat past mistakes. \n"
+            )
+        )
+        messages = await ai.next(messages, step_name=curr_fn())
+        files_dict, errors = salvage_correct_hunks(
+            messages, files_dict, memory, diff_timeout
+        )
+        retries += 1
+
+    return files_dict
+
+
+def salvage_correct_hunks(
+    messages: List, files_dict: FilesDict, memory: BaseMemory, diff_timeout=3
+) -> tuple[FilesDict, List[str]]:
+    error_messages = []
+    ai_response = messages[-1].content.strip()
+
+    diffs = parse_diffs(ai_response, diff_timeout=diff_timeout)
+    # validate and correct diffs
+
+    for _, diff in diffs.items():
+        # if diff is a new file, validation and correction is unnecessary
+        if diff.is_new_file():
+            # No validation needed for new files at this stage
+            pass
+        elif diff.filename_pre not in files_dict:
+            # If the file is not in files_dict and not a new file, it's an error
+            error_messages.append(
+                f"Diff for '{diff.filename_pre}' attempts to modify a non-existent file."
+            )
+        else:
+            problems = diff.validate_and_correct(
+                file_to_lines_dict(files_dict[diff.filename_pre])
+            )
+            error_messages.extend(problems)
+    files_dict = apply_diffs(diffs, files_dict)
+    memory.log(IMPROVE_LOG_FILE, "\n\n".join(x.pretty_repr() for x in messages))
+    memory.log(DIFF_LOG_FILE, "\n\n".join(error_messages))
+    return files_dict, error_messages
+
+
+class Tee(object):
+    def __init__(self, *files):
+        self.files = files
+
+    def write(self, obj):
+        for file in self.files:
+            file.write(obj)
+
+    def flush(self):
+        for file in self.files:
+            file.flush()
+
+
+async def handle_improve_mode(prompt, agent, memory, files_dict, diff_timeout=3):
+    captured_output = io.StringIO()
+    old_stdout = sys.stdout
+    sys.stdout = Tee(sys.stdout, captured_output)
+
+    try:
+        files_dict = await agent.improve(files_dict, prompt, diff_timeout=diff_timeout)
+    except Exception as e:
+        logger.error(
+            f"Error while improving the project: {e}\nCould you please upload the debug_log_file.txt in {memory.path}/logs folder to github?\nFULL STACK TRACE:\n"
+        )
+        traceback.print_exc(file=sys.stdout)  # Print the full stack trace
+    finally:
+        # Reset stdout
+        sys.stdout = old_stdout
+
+        # Get the captured output
+        captured_string = captured_output.getvalue()
+        logger.debug("\nCONSOLE OUTPUT:\n" + captured_string)
+
+    return files_dict

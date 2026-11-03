@@ -5,9 +5,17 @@ from gpt_computer.applications.cli.learning import Learning
 from gpt_computer.core.default.disk_memory import DiskMemory
 from gpt_computer.core.prompt import Prompt
 
+# Import the actual module where Path is used for patching
+from gpt_computer.interfaces import cli as cli_interfaces
+
 
 def test_human_review_input_no_concent_returns_none():
-    with mock.patch.object(learning, "check_collection_consent", return_value=False):
+    with (
+        mock.patch.object(
+            cli_interfaces.learning, "check_collection_consent", return_value=False
+        ),
+        mock.patch("builtins.print"),  # Suppress print statements
+    ):
         result = learning.human_review_input()
 
     assert result is None
@@ -15,7 +23,9 @@ def test_human_review_input_no_concent_returns_none():
 
 def test_human_review_input_consent_code_ran_no_comments():
     with (
-        mock.patch.object(learning, "check_collection_consent", return_value=True),
+        mock.patch.object(
+            cli_interfaces.learning, "check_collection_consent", return_value=True
+        ),
         mock.patch("builtins.input", return_value="y"),
     ):
         result = learning.human_review_input()
@@ -28,7 +38,9 @@ def test_human_review_input_consent_code_ran_no_comments():
 
 def test_human_review_input_consent_code_ran_not_perfect_but_useful_no_comments():
     with (
-        mock.patch.object(learning, "check_collection_consent", return_value=True),
+        mock.patch.object(
+            cli_interfaces.learning, "check_collection_consent", return_value=True
+        ),
         mock.patch("builtins.input", side_effect=["y", "n", "y", ""]),
     ):
         result = learning.human_review_input()
@@ -44,33 +56,43 @@ def test_check_collection_consent_yes():
     gptc_consent_mock.exists.return_value = True
     gptc_consent_mock.read_text.return_value = "true"
 
-    with mock.patch.object(learning, "Path", return_value=gptc_consent_mock):
+    with mock.patch.object(
+        cli_interfaces.learning, "Path", return_value=gptc_consent_mock
+    ):
         result = learning.check_collection_consent()
 
     assert result is True
 
 
 def test_check_collection_consent_no_ask_collection_consent():
-    with mock.patch.object(learning, "Path") as gptc_consent_mock:
+    with mock.patch.object(cli_interfaces.learning, "Path") as gptc_consent_mock:
         gptc_consent_mock.exists.return_value = True
         gptc_consent_mock.read_text.return_value = "false"
 
-        with mock.patch.object(learning, "ask_collection_consent", return_value=True):
+        with mock.patch.object(
+            cli_interfaces.learning, "ask_collection_consent", return_value=True
+        ):
             result = learning.check_collection_consent()
 
     assert result is True
 
 
 def test_ask_collection_consent_yes():
-    with mock.patch("builtins.input", return_value="y"):
-        result = learning.ask_collection_consent()
+    with (
+        mock.patch("builtins.input", return_value="y"),
+        mock.patch("builtins.print"),  # Suppress print statements
+    ):
+        result = cli_interfaces.learning.ask_collection_consent()
 
     assert result is True
 
 
 def test_ask_collection_consent_no():
-    with mock.patch("builtins.input", return_value="n"):
-        result = learning.ask_collection_consent()
+    with (
+        mock.patch("builtins.input", return_value="n"),
+        mock.patch("builtins.print"),  # Suppress print statements
+    ):
+        result = cli_interfaces.learning.ask_collection_consent()
 
     assert result is False
 
@@ -99,11 +121,11 @@ def test_extract_learning():
 
 
 def test_get_session():
-    with mock.patch.object(learning, "Path") as path_mock:
+    with mock.patch.object(cli_interfaces.learning, "Path") as path_mock:
         # can be better tested with pyfakefs.
         path_mock.return_value.__truediv__.return_value.exists.return_value = False
 
-        with mock.patch.object(learning, "random") as random_mock:
+        with mock.patch.object(cli_interfaces.learning, "random") as random_mock:
             random_mock.randint.return_value = 42
             result = learning.get_session()
 

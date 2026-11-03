@@ -5,6 +5,10 @@ Runs multi-step AI workflows with capability-based scheduling, concurrent
 dispatch of ready steps, retry/backoff, agent fallback, per-step timeouts, and
 optional human-in-the-loop approval gates. Every transition is audited.
 
+Interrupted or failed runs can be detected with :meth:`WorkflowEngine.detect_resumable_runs`
+and continued with :meth:`WorkflowEngine.resume`; steps that already succeeded
+are not executed again.
+
 Classes:
     WorkflowExecutionError: Raised when a step fails past retries/fallback.
     WorkflowConfigurationError: Raised on invalid workflow definitions.
@@ -18,6 +22,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import warnings
 
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -33,6 +38,13 @@ from gpt_computer.core.orchestration.models import (
     utcnow_iso,
 )
 
+warnings.warn(
+    "Importing from 'gpt_computer.core.orchestration.workflow_engine' is deprecated and will be removed in version 1.0.0. "
+    "See MIGRATION_GUIDE.md for details.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 
 class WorkflowExecutionError(Exception):
     """A step failed after exhausting retries and fallback capacity."""
@@ -44,6 +56,16 @@ class WorkflowConfigurationError(Exception):
 
 # A candidate executor for a step - ("agent", AgentHandle) or ("handler", fn).
 Candidate = Tuple[str, Any]
+
+# Run statuses that may still have unfinished work and can be resumed.
+RESUMABLE_STATUSES = frozenset(
+    {
+        WorkflowStatus.PENDING,
+        WorkflowStatus.RUNNING,
+        WorkflowStatus.FAILED,
+        WorkflowStatus.CANCELLED,
+    }
+)
 
 
 class WorkflowEngine:
@@ -126,6 +148,48 @@ class WorkflowEngine:
         """Return all known runs, most recent first."""
         return list(reversed(list(self._runs.values())))
 
+    def is_resumable(self, run: WorkflowRun) -> bool:
+        """Return True when ``run`` has unfinished steps that can be resumed."""
+        if run.status not in RESUMABLE_STATUSES:
+            return False
+        return bool(run.unresolved_steps)
+
+    def detect_resumable_runs(self) -> List[WorkflowRun]:
+        """Return every tracked run that still has unfinished work."""
+        return [run for run in self.list_runs() if self.is_resumable(run)]
+
+    async def resume(self, run: WorkflowRun) -> WorkflowRun:
+        """
+        Continue an interrupted, failed, or cancelled run.
+
+        Steps recorded as ``SUCCEEDED`` are kept and skipped; every remaining
+        step is (re)executed, so downstream steps still receive the prior
+        results. A completed run is returned unchanged.
+        """
+        if run.run_id not in self._runs:
+            self._runs[run.run_id] = run
+        if not self.is_resumable(run):
+            return run
+
+        unresolved = run.unresolved_steps
+        run.status = WorkflowStatus.PENDING
+        run.error = None
+        run.completed_at = None
+        self._audit(
+            "workflow.resumed",
+            run.run_id,
+            None,
+            {"unresolved_steps": unresolved},
+        )
+        return await self.execute(run)
+
+    async def resume_run(self, run_id: str) -> WorkflowRun:
+        """Resume a tracked run by id. Raises ``KeyError`` if it is unknown."""
+        run = self._runs.get(run_id)
+        if run is None:
+            raise KeyError(f"Unknown workflow run '{run_id}'")
+        return await self.resume(run)
+
     async def run_workflow(
         self,
         workflow: WorkflowSpec,
@@ -142,13 +206,27 @@ class WorkflowEngine:
             return run
 
         run.status = WorkflowStatus.RUNNING
-        run.started_at = utcnow_iso()
+        if run.started_at is None:
+            run.started_at = utcnow_iso()
+        run.completed_at = None
         self._audit("workflow.started", run.run_id, None)
 
         steps = run.workflow.steps
         by_id = {s.step_id: s for s in steps}
-        started: set = set()
-        completed: set = set()
+
+        # Seed scheduler state from prior progress so resuming a run skips
+        # steps that already succeeded while preserving their results.
+        completed = {
+            step_id
+            for step_id, execution in run.step_executions.items()
+            if execution.status == StepStatus.SUCCEEDED
+        }
+        for step_id in completed:
+            execution = run.step_executions[step_id]
+            if step_id not in run.step_results and execution.result is not None:
+                run.step_results[step_id] = execution.result
+                run.context[step_id] = execution.result
+        started: set = set(completed)
 
         try:
             while True:
@@ -203,8 +281,16 @@ class WorkflowEngine:
     async def _run_step(
         self, run: WorkflowRun, step: Any, by_id: Dict[str, Any]
     ) -> Any:
-        step_exec = StepExecution(step_id=step.step_id)
-        run.step_executions[step.step_id] = step_exec
+        step_exec = run.step_executions.get(step.step_id)
+        if step_exec is None:
+            step_exec = StepExecution(step_id=step.step_id)
+            run.step_executions[step.step_id] = step_exec
+        else:
+            # Re-running a step (e.g. after resume) keeps its attempt history
+            # but clears the terminal state of the previous run.
+            step_exec.error = None
+            step_exec.result = None
+            step_exec.completed_at = None
         step_exec.status = StepStatus.RUNNING
         step_exec.started_at = utcnow_iso()
         self._audit(
@@ -421,6 +507,7 @@ class WorkflowEngine:
             "completed": sum(1 for r in runs if r.status == WorkflowStatus.COMPLETED),
             "failed": sum(1 for r in runs if r.status == WorkflowStatus.FAILED),
             "active": sum(1 for r in runs if r.status == WorkflowStatus.RUNNING),
+            "resumable": sum(1 for r in runs if self.is_resumable(r)),
         }
 
     def _audit(

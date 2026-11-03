@@ -1,0 +1,90 @@
+from __future__ import annotations
+
+import os
+import sys
+
+from pathlib import Path
+from typing import Optional
+
+
+def get_config_dir() -> Path:
+    """Get platform-appropriate config directory."""
+
+    def get_fallback_config_dir() -> Path:
+        if sys.platform == "win32":
+            return (
+                Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
+                / "gptc"
+            )
+        elif sys.platform == "darwin":
+            return Path.home() / "Library" / "Application Support" / "gptc"
+        return Path.home() / ".config" / "gptc"
+
+    config_dir = Path.home() / ".gptc"
+    if not config_dir.exists():
+        config_dir = get_fallback_config_dir()
+        if not config_dir.exists():
+            config_dir = Path.home() / ".gptc"
+    return config_dir
+
+
+DEFAULT_PORT = 1337
+DEFAULT_TIMEOUT = 600
+DEFAULT_STREAM_TIMEOUT = 600
+
+PACKAGE_NAME = "gptc"
+CONFIG_DIR = get_config_dir()
+COOKIES_DIR = CONFIG_DIR / "cookies"
+CUSTOM_COOKIES_DIR = "./har_and_cookies"
+ORGANIZATION = "gpt-computer"
+GITHUB_REPOSITORY = "gpt-computer/gpt-computer"
+STATIC_DOMAIN = "gptc.dev"
+STATIC_URL = f"https://{STATIC_DOMAIN}/"
+REFFERER_URL = f"https://{STATIC_DOMAIN}/"
+SPACE_URL = "https://gptc.space/"
+DIST_DIR = f"./{STATIC_DOMAIN}/dist"
+DEFAULT_MODEL = "openai/gpt-oss-120b"
+JSDELIVR_URL = "https://cdn.jsdelivr.net/"
+DOWNLOAD_URL = f"{JSDELIVR_URL}gh/{ORGANIZATION}/{STATIC_DOMAIN}/"
+GITHUB_URL = (
+    f"https://raw.githubusercontent.com/{ORGANIZATION}/{STATIC_DOMAIN}/refs/heads/main/"
+)
+
+
+class AppConfig:
+    ignored_providers: Optional[list[str]] = None
+    gptc_api_key: Optional[str] = None
+    ignore_cookie_files: bool = False
+    model: Optional[str] = None
+    provider: Optional[str] = None
+    media_provider: Optional[str] = None
+    proxy: Optional[str] = None
+    gui: bool = False
+    demo: bool = False
+    timeout: int = DEFAULT_TIMEOUT
+    stream_timeout: int = DEFAULT_STREAM_TIMEOUT
+    disable_custom_api_key: bool = False
+    gptc_space_api_key: Optional[str] = None
+
+    @classmethod
+    def set_config(cls, **data):
+        for key, value in data.items():
+            if value is not None:
+                setattr(cls, key, value)
+
+    @classmethod
+    def load_from_env(cls):
+        cls.gptc_api_key = os.environ.get("GPTC_API_KEY", cls.gptc_api_key)
+        cls.timeout = int(os.environ.get("GPTC_TIMEOUT", cls.timeout))
+        cls.stream_timeout = int(
+            os.environ.get("GPTC_STREAM_TIMEOUT", cls.stream_timeout)
+        )
+        cls.proxy = os.environ.get("GPTC_PROXY", cls.proxy)
+        cls.model = os.environ.get("GPTC_MODEL", cls.model)
+        cls.provider = os.environ.get("GPTC_PROVIDER", cls.provider)
+        cls.disable_custom_api_key = os.environ.get(
+            "GPTC_DISABLE_CUSTOM_API_KEY", str(cls.disable_custom_api_key)
+        ).lower() in ("true", "1", "yes")
+        cls.gptc_space_api_key = os.environ.get(
+            "GPTC_SPACE_API_KEY", cls.gptc_space_api_key
+        )

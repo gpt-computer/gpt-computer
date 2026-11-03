@@ -1,0 +1,50 @@
+# Build stage
+FROM python:slim-bookworm AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    libffi-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements-slim.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements-slim.txt
+
+# Final runtime stage
+FROM python:slim-bookworm
+
+ARG GPTC_VERSION
+ARG GPTC_USER=gptc
+ARG GPTC_USER_ID=1000
+
+ENV GPTC_VERSION=$GPTC_VERSION \
+    GPTC_USER=$GPTC_USER \
+    GPTC_USER_ID=$GPTC_USER_ID \
+    GPTC_DIR=/app \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    flac \
+    curl \
+    && groupadd -g $GPTC_USER_ID $GPTC_USER \
+    && useradd -rm -u $GPTC_USER_ID -g $GPTC_USER_ID $GPTC_USER \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Copy pre-compiled dependencies from builder stage
+COPY --from=builder /install /usr/local
+
+WORKDIR $GPTC_DIR
+
+# Copy application source code
+COPY --chown=$GPTC_USER_ID:$GPTC_USER_ID . $GPTC_DIR
+
+USER $GPTC_USER_ID
+
+EXPOSE 8080
+
+CMD ["python", "-m", "gptc", "--port", "8080"]
