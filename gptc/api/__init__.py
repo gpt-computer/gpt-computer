@@ -143,10 +143,7 @@ from .stubs import (
 )
 
 try:
-    from gptc.gui.server.crypto import (
-        create_or_read_keys,
-        get_session_key,
-    )
+    from gptc.gui.server.crypto import create_or_read_keys, get_session_key
 
     has_crypto = True
 except ImportError:
