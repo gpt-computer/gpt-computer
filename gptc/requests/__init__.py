@@ -11,13 +11,13 @@ from urllib.parse import urlparse
 try:
     from curl_cffi.requests import Response, Session
 
-
+    from .curl_cffi import StreamResponse, StreamSession
 
     has_curl_cffi = True
 except ImportError:
     from typing import Type as Response
 
-
+    from .aiohttp import StreamResponse, StreamSession
 
     has_curl_cffi = False
 try:
@@ -49,6 +49,8 @@ from gpt_computer.infrastructure.cookies import BrowserConfig  # noqa: E402
 from ..errors import MissingRequirementsError  # noqa: E402
 from ..typing import Cookies  # noqa: E402
 from .defaults import DEFAULT_HEADERS, WEBVIEW_HAEDERS  # noqa: E402
+
+__all__ = ["Response", "Session", "StreamResponse", "StreamSession", "Browser"]
 
 if not has_curl_cffi:
 
