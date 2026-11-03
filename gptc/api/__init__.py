@@ -79,18 +79,13 @@ import gpt_computer.infrastructure.debug as debug
 import gptc
 
 from gpt_computer.ai.models.models import ImageModel, ModelUtils, VisionModel
-
 from gpt_computer.ai.providers.any_provider import AnyProvider
 from gpt_computer.ai.providers.response import (
     AudioResponse,
     BaseConversation,
     JsonConversation,
 )
-
-from gpt_computer.infrastructure.config.paths import (
-    DEFAULT_PORT,
-    AppConfig,
-)
+from gpt_computer.infrastructure.config.paths import DEFAULT_PORT, AppConfig
 from gpt_computer.infrastructure.cookies import get_cookies_dir, read_cookie_files
 from gpt_computer.infrastructure.image import (
     EXTENSIONS_MAP,

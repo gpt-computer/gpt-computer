@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+
 from contextlib import asynccontextmanager
 from http.cookies import Morsel
 from typing import AsyncIterator, Iterator, Optional
@@ -10,7 +11,7 @@ from urllib.parse import urlparse
 try:
     from curl_cffi.requests import Response, Session
 
-    from .curl_cffi import StreamSession
+
 
     has_curl_cffi = True
 except ImportError:
@@ -38,14 +39,7 @@ try:
 except ImportError:
     has_cdp = False
 
-from .cdp_browser import (
-    CDPBrowser,
-    CDPElement,
-    CDPTab,
-    CookieParam,
-    _CdpShim as _cdp,
-
-)
+from .cdp_browser import CDPBrowser, CookieParam, _CdpShim as _cdp
 
 Browser = CDPBrowser
 
@@ -54,9 +48,7 @@ from gpt_computer.infrastructure.cookies import BrowserConfig
 
 from ..errors import MissingRequirementsError
 from ..typing import Cookies
-
 from .defaults import DEFAULT_HEADERS, WEBVIEW_HAEDERS
-
 
 if not has_curl_cffi:
 

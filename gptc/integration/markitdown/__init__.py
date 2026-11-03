@@ -415,6 +415,6 @@ class MarkItDown(BaseMarkItDown):
                 if empty > 2:
                     continue
                 else:
-                    lines.append(l)
+                    lines.append(line)
             result.text_content = "\n".join(lines).strip()
         return result
