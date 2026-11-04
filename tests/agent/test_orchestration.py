@@ -18,6 +18,7 @@ from gpt_computer.infrastructure.files.operations import FilesDict
 
 class MockAIClient:
     """Mock AI client for testing."""
+
     pass
 
 
@@ -28,16 +29,16 @@ class TestOrchestrator:
         """Test registering agents."""
         orchestrator = Orchestrator()
         agent = ArchitectAgent(MockAIClient())
-        
+
         orchestrator.register_agent(AgentType.ARCHITECT, agent)
-        
+
         assert AgentType.ARCHITECT in orchestrator.agents
         assert orchestrator.agents[AgentType.ARCHITECT] == agent
 
     def test_create_workflow(self):
         """Test creating a workflow."""
         orchestrator = Orchestrator()
-        
+
         tasks = [
             Task(
                 id="task1",
@@ -53,9 +54,9 @@ class TestOrchestrator:
                 dependencies=["task1"],
             ),
         ]
-        
+
         orchestrator.create_workflow(tasks)
-        
+
         assert len(orchestrator.task_queue) == 2
         assert orchestrator.task_queue[0].id == "task1"
         assert orchestrator.task_queue[1].id == "task2"
@@ -63,7 +64,7 @@ class TestOrchestrator:
     def test_build_dependency_graph(self):
         """Test topological sort of dependencies."""
         orchestrator = Orchestrator()
-        
+
         tasks = [
             Task(
                 id="task1",
@@ -86,9 +87,9 @@ class TestOrchestrator:
                 dependencies=["task2"],
             ),
         ]
-        
+
         ordered = orchestrator._build_dependency_graph(tasks)
-        
+
         assert ordered[0].id == "task1"
         assert ordered[1].id == "task2"
         assert ordered[2].id == "task3"
@@ -97,11 +98,11 @@ class TestOrchestrator:
     async def test_execute_workflow_simple(self):
         """Test executing a simple workflow."""
         orchestrator = Orchestrator()
-        
+
         # Register agent
         agent = ArchitectAgent(MockAIClient())
         orchestrator.register_agent(AgentType.ARCHITECT, agent)
-        
+
         # Create workflow
         tasks = [
             Task(
@@ -111,9 +112,9 @@ class TestOrchestrator:
                 agent_type=AgentType.ARCHITECT,
             ),
         ]
-        
+
         result = await orchestrator.execute_workflow(tasks)
-        
+
         assert isinstance(result, WorkflowResult)
         assert result.total_tasks == 1
         assert result.completed_tasks == 1
@@ -124,13 +125,13 @@ class TestOrchestrator:
     async def test_execute_workflow_with_dependencies(self):
         """Test executing a workflow with dependencies."""
         orchestrator = Orchestrator()
-        
+
         # Register agents
         architect = ArchitectAgent(MockAIClient())
         impl = ImplementationAgent(MockAIClient())
         orchestrator.register_agent(AgentType.ARCHITECT, architect)
         orchestrator.register_agent(AgentType.IMPLEMENTATION, impl)
-        
+
         # Create workflow with dependencies
         tasks = [
             Task(
@@ -147,9 +148,9 @@ class TestOrchestrator:
                 dependencies=["task1"],
             ),
         ]
-        
+
         result = await orchestrator.execute_workflow(tasks)
-        
+
         assert result.total_tasks == 2
         assert result.completed_tasks == 2
         assert result.failed_tasks == 0
@@ -160,7 +161,7 @@ class TestOrchestrator:
     async def test_execute_workflow_missing_agent(self):
         """Test executing workflow with missing agent."""
         orchestrator = Orchestrator()
-        
+
         # Create workflow without registering agent
         tasks = [
             Task(
@@ -170,9 +171,9 @@ class TestOrchestrator:
                 agent_type=AgentType.ARCHITECT,
             ),
         ]
-        
+
         result = await orchestrator.execute_workflow(tasks)
-        
+
         assert result.total_tasks == 1
         assert result.completed_tasks == 0
         assert result.failed_tasks == 1
@@ -181,7 +182,7 @@ class TestOrchestrator:
     def test_get_workflow_status(self):
         """Test getting workflow status."""
         orchestrator = Orchestrator()
-        
+
         tasks = [
             Task(
                 id="task1",
@@ -198,10 +199,10 @@ class TestOrchestrator:
                 status="completed",
             ),
         ]
-        
+
         orchestrator.create_workflow(tasks)
         status = orchestrator.get_workflow_status()
-        
+
         assert status["task1"] == "pending"
         assert status["task2"] == "completed"
 
@@ -214,9 +215,9 @@ class TestSpecializedAgents:
         """Test architect agent init."""
         agent = ArchitectAgent(MockAIClient())
         prompt = Prompt(text="Design a REST API")
-        
+
         result = await agent.init(prompt)
-        
+
         assert isinstance(result, FilesDict)
         assert "architecture.md" in result
 
@@ -225,9 +226,9 @@ class TestSpecializedAgents:
         """Test implementation agent init."""
         agent = ImplementationAgent(MockAIClient())
         prompt = Prompt(text="Implement the API")
-        
+
         result = await agent.init(prompt)
-        
+
         assert isinstance(result, FilesDict)
         assert "main.py" in result
 
@@ -236,9 +237,9 @@ class TestSpecializedAgents:
         """Test test agent init."""
         agent = TestAgent(MockAIClient())
         prompt = Prompt(text="Write tests")
-        
+
         result = await agent.init(prompt)
-        
+
         assert isinstance(result, FilesDict)
         assert "test_main.py" in result
 
@@ -247,8 +248,8 @@ class TestSpecializedAgents:
         """Test review agent init."""
         agent = ReviewAgent(MockAIClient())
         prompt = Prompt(text="Review the code")
-        
+
         result = await agent.init(prompt)
-        
+
         assert isinstance(result, FilesDict)
         assert "review.md" in result

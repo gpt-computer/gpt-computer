@@ -15,6 +15,7 @@ from gpt_computer.infrastructure.files.operations import FilesDict
 
 class AgentType(Enum):
     """Types of specialized agents."""
+
     ARCHITECT = "architect"
     IMPLEMENTATION = "implementation"
     TEST = "test"
@@ -25,6 +26,7 @@ class AgentType(Enum):
 @dataclass
 class Task:
     """Unit of work for an agent."""
+
     id: str
     name: str
     description: str
@@ -38,6 +40,7 @@ class Task:
 @dataclass
 class WorkflowResult:
     """Result of a workflow execution."""
+
     task_results: Dict[str, FilesDict]
     total_tasks: int
     completed_tasks: int
@@ -110,7 +113,9 @@ class Orchestrator:
 
         return ordered
 
-    def _gather_context(self, task: Task, results: Dict[str, FilesDict]) -> Dict[str, Any]:
+    def _gather_context(
+        self, task: Task, results: Dict[str, FilesDict]
+    ) -> Dict[str, Any]:
         """Gather results from dependent tasks.
 
         Args:
@@ -157,7 +162,9 @@ class Orchestrator:
 
             # Check if agent is registered
             if task.agent_type not in self.agents:
-                self.results[task.id] = FilesDict({"error.md": f"No agent registered for type {task.agent_type}"})
+                self.results[task.id] = FilesDict(
+                    {"error.md": f"No agent registered for type {task.agent_type}"}
+                )
                 task.status = "failed"
                 failed += 1
                 continue
@@ -169,7 +176,7 @@ class Orchestrator:
             try:
                 agent = self.agents[task.agent_type]
                 prompt = Prompt(text=task.description)
-                
+
                 # Check if this is an init task (no dependencies) or improve task
                 if task.dependencies:
                     # Use improve with context from dependencies
@@ -178,12 +185,12 @@ class Orchestrator:
                     for dep_id, dep_result in context.items():
                         if isinstance(dep_result, FilesDict):
                             context_files.update(dep_result)
-                    
+
                     result = await agent.improve(context_files, prompt)
                 else:
                     # Use init for first task
                     result = await agent.init(prompt)
-                
+
                 self.results[task.id] = result
                 task.status = "completed"
                 completed += 1
@@ -199,7 +206,7 @@ class Orchestrator:
             total_tasks=len(ordered_tasks),
             completed_tasks=completed,
             failed_tasks=failed,
-            execution_time=execution_time
+            execution_time=execution_time,
         )
 
     def get_workflow_status(self) -> Dict[str, str]:

@@ -22,7 +22,7 @@ class TestInMemoryVectorStore:
             store = InMemoryVectorStore()
         except ImportError:
             pytest.skip("sentence-transformers not installed")
-        
+
         # Add documents
         docs = [
             Document(
@@ -53,7 +53,7 @@ class TestInMemoryVectorStore:
             store = InMemoryVectorStore()
         except ImportError:
             pytest.skip("sentence-transformers not installed")
-        
+
         docs = [
             Document(
                 content="Python code",
@@ -78,7 +78,7 @@ class TestInMemoryVectorStore:
             store = InMemoryVectorStore()
         except ImportError:
             pytest.skip("sentence-transformers not installed")
-        
+
         docs = [
             Document(content="Document 1", id="doc1"),
             Document(content="Document 2", id="doc2"),
@@ -100,7 +100,7 @@ class TestInMemoryVectorStore:
             store = InMemoryVectorStore()
         except ImportError:
             pytest.skip("sentence-transformers not installed")
-        
+
         docs = [Document(content="Test", id="test")]
         await store.add_documents(docs)
 
@@ -121,7 +121,7 @@ class TestRAGPipeline:
             store = InMemoryVectorStore()
         except ImportError:
             pytest.skip("sentence-transformers not installed")
-        
+
         docs = [
             Document(content="Python uses indentation for code blocks"),
             Document(content="JavaScript uses curly braces for code blocks"),
@@ -142,7 +142,7 @@ class TestRAGPipeline:
             store = InMemoryVectorStore()
         except ImportError:
             pytest.skip("sentence-transformers not installed")
-        
+
         rag = RAGPipeline(store)
 
         augmented = await rag.augment_prompt("Test query")
@@ -161,7 +161,7 @@ class TestEnhancedMemory:
             memory = EnhancedMemory()
         except ImportError:
             pytest.skip("sentence-transformers not installed")
-        
+
         doc_id = await memory.add_to_knowledge_base(
             "FastAPI is a modern Python web framework",
             metadata={"category": "framework", "language": "python"},
@@ -177,7 +177,7 @@ class TestEnhancedMemory:
             memory = EnhancedMemory()
         except ImportError:
             pytest.skip("sentence-transformers not installed")
-        
+
         await memory.add_to_knowledge_base(
             "FastAPI is a modern Python web framework",
             metadata={"category": "framework"},
@@ -195,7 +195,7 @@ class TestEnhancedMemory:
             memory = EnhancedMemory()
         except ImportError:
             pytest.skip("sentence-transformers not installed")
-        
+
         messages = [
             {"role": "user", "content": "What is FastAPI?"},
             {
@@ -217,14 +217,14 @@ class TestEnhancedMemory:
             memory = EnhancedMemory()
         except ImportError:
             pytest.skip("sentence-transformers not installed")
-        
+
         messages = [
             {"role": "user", "content": "Hello"},
             {"role": "assistant", "content": "Hi there"},
         ]
-        
+
         await memory.add_conversation(messages)
-        
+
         conv = await memory.get_conversation(limit=10)
         assert "Hello" in conv
         assert "Hi there" in conv

@@ -118,6 +118,7 @@ class InMemoryVectorStore(VectorStoreBackend):
         except ImportError:
             # Fallback to simple dot product if sklearn not available
             import numpy as np
+
             query_vec = np.array(query_embedding)
             doc_vecs = np.array(doc_embeddings)
             similarities = np.dot(doc_vecs, query_vec)
