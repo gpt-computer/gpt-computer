@@ -181,3 +181,19 @@ class TestEnhancedMemory:
         # Should retrieve context about FastAPI
         context = await memory.get_conversation_context("web frameworks")
         assert "FastAPI" in context
+
+    @pytest.mark.asyncio
+    async def test_get_conversation(self):
+        """Test getting conversation history."""
+        memory = EnhancedMemory()
+        
+        messages = [
+            {"role": "user", "content": "Hello"},
+            {"role": "assistant", "content": "Hi there"},
+        ]
+        
+        await memory.add_conversation(messages)
+        
+        conv = await memory.get_conversation(limit=10)
+        assert "Hello" in conv
+        assert "Hi there" in conv

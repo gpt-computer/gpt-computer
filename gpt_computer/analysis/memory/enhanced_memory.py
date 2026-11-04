@@ -10,10 +10,9 @@ from typing import Any, Dict, List, Optional
 
 from .vector_store import Document, RAGPipeline, VectorStoreBackend
 from .in_memory_store import InMemoryVectorStore
-from ...agent.memory import BaseMemory
 
 
-class EnhancedMemory(BaseMemory):
+class EnhancedMemory:
     """Enhanced memory with RAG capabilities for long-term context."""
 
     def __init__(
@@ -27,10 +26,10 @@ class EnhancedMemory(BaseMemory):
             vector_store: Vector store backend (defaults to InMemoryVectorStore)
             context_documents: Number of context documents to retrieve
         """
-        super().__init__()
         self.vector_store = vector_store or InMemoryVectorStore()
         self.rag = RAGPipeline(self.vector_store, context_documents)
         self._knowledge_base: Dict[str, Any] = {}
+        self._conversations: List[Dict[str, Any]] = []
 
     async def add_to_knowledge_base(
         self,
@@ -74,8 +73,8 @@ class EnhancedMemory(BaseMemory):
         Args:
             messages: List of conversation messages
         """
-        # Store in base memory
-        await super().add_conversation(messages)
+        # Store in conversation history
+        self._conversations.extend(messages)
 
         # Also add to knowledge base for RAG
         for msg in messages:
@@ -84,6 +83,26 @@ class EnhancedMemory(BaseMemory):
                     msg.get("content", ""),
                     metadata={"role": "assistant", "timestamp": msg.get("timestamp")},
                 )
+
+    async def get_conversation(
+        self,
+        limit: int = 10,
+    ) -> str:
+        """Get recent conversation history.
+
+        Args:
+            limit: Number of recent messages to include
+
+        Returns:
+            Formatted conversation string
+        """
+        recent = self._conversations[-limit:] if limit else self._conversations
+        formatted = []
+        for msg in recent:
+            role = msg.get("role", "unknown")
+            content = msg.get("content", "")
+            formatted.append(f"{role}: {content}")
+        return "\n".join(formatted)
 
     async def get_conversation_context(
         self,
