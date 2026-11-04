@@ -170,7 +170,7 @@ def resolve_workspace_path(
     safe_rel_path = secure_filename(rel_path)
     # Replace dots with underscores to prevent directory traversal
     safe_rel_path = safe_rel_path.replace(".", "_")
-    
+
     root = get_workspace_dir().resolve()
     if workspace_secret and user_id:
         user_ws = get_secret_workspace_dir(user_id).resolve()
