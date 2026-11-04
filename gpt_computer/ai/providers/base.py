@@ -1,0 +1,87 @@
+"""
+AI Provider Base Classes
+
+This module provides abstract base classes for AI providers.
+
+Classes:
+    BaseProvider: Abstract base class for a provider.
+    BaseRetryProvider: Base class for a provider that implements retry logic.
+"""
+
+from __future__ import annotations
+
+from abc import ABC
+from typing import Dict, Optional, Type, Union
+
+
+class BaseProvider(ABC):
+    """
+    Abstract base class for a provider.
+
+    Attributes:
+        url (str): URL of the provider.
+        working (bool): Indicates if the provider is currently working.
+        active_by_default (bool): Indicates if the provider is active by default.
+        needs_auth (bool): Indicates if the provider needs authentication.
+        supports_stream (bool): Indicates if the provider supports streaming.
+        supports_message_history (bool): Indicates if the provider supports message history.
+        supports_system_message (bool): Indicates if the provider supports system messages.
+        params (str): List parameters for the provider.
+    """
+
+    url: Optional[str] = None
+    working: bool = False
+    active_by_default: Optional[bool] = None
+    needs_auth: bool = False
+    supports_stream: bool = False
+    supports_message_history: bool = False
+    supports_system_message: bool = False
+    params: str = ""
+    live: int = 0
+
+    @classmethod
+    def get_dict(cls) -> Dict[str, str]:
+        """
+        Get a dictionary representation of the provider.
+
+        Returns:
+            Dict[str, str]: A dictionary with provider's details.
+        """
+        return {
+            "name": cls.__name__,
+            "url": cls.url,
+            "label": getattr(cls, "label", None),
+        }
+
+    @classmethod
+    def get_parent(cls) -> str:
+        return getattr(cls, "parent", cls.__name__)
+
+
+class BaseRetryProvider(BaseProvider):
+    """
+    Base class for a provider that implements retry logic.
+
+    Attributes:
+        providers (List[Type[BaseProvider]]): List of providers to use for retries.
+        shuffle (bool): Whether to shuffle the providers list.
+        exceptions (Dict[str, Exception]): Dictionary of exceptions encountered.
+        last_provider (Type[BaseProvider]): The last provider used.
+    """
+
+    __name__: str = "RetryProvider"
+    supports_stream: bool = True
+    use_stream_timeout: bool = True
+    last_provider: Optional[Type["BaseProvider"]] = None
+
+
+# ProviderType is a union of provider class or instance
+ProviderType = Union[Type[BaseProvider], BaseRetryProvider, BaseProvider]
+
+
+class Streaming:
+    def __init__(self, data: str) -> None:
+        self.data = data
+
+    def __str__(self) -> str:
+        return self.data

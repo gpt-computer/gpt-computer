@@ -22,6 +22,11 @@ gpt-computer is an **execution-native AI software generation platform** designed
 
 Unlike prompt-only assistants, gpt-computer runs inside a **deterministic closed-loop execution system**.
 
+> **Upgrading from 0.2.x?** The project was restructured into a single
+> `gpt_computer` package with a compatibility layer for legacy `gptc` and
+> `gpt_computer.core` imports. See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for
+> the supported imports, CLI aliases, and the 12-month deprecation schedule.
+
 ---
 
 # 🏗 Architecture

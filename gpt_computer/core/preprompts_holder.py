@@ -1,29 +1,21 @@
-from pathlib import Path
-from typing import Dict
+"""
+Preprompts Holder Module
 
-from gpt_computer.core.default.disk_memory import DiskMemory
+.. deprecated:: 0.3.0
+    Importing from 'gpt_computer.core.preprompts_holder' is deprecated. Use
+    'from gpt_computer.agent import PrepromptsHolder' instead.
+"""
 
+import warnings
 
-class PrepromptsHolder:
-    """
-    A holder for preprompt texts that are stored on disk.
+warnings.warn(
+    "Importing from 'gpt_computer.core.preprompts_holder' is deprecated and will be removed in version 1.0.0. "
+    "Use 'from gpt_computer.agent import PrepromptsHolder' instead. "
+    "See MIGRATION_GUIDE.md for details.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-    This class provides methods to retrieve preprompt texts from a specified directory.
+from gpt_computer.agent.pp_holder import PrepromptsHolder  # noqa: E402
 
-    Attributes
-    ----------
-    preprompts_path : Path
-        The file path to the directory containing preprompt texts.
-
-    Methods
-    -------
-    get_preprompts() -> Dict[str, str]
-        Retrieve all preprompt texts from the directory and return them as a dictionary.
-    """
-
-    def __init__(self, preprompts_path: Path):
-        self.preprompts_path = preprompts_path
-
-    def get_preprompts(self) -> Dict[str, str]:
-        preprompts_repo = DiskMemory(self.preprompts_path)
-        return {file_name: preprompts_repo[file_name] for file_name in preprompts_repo}
+__all__ = ["PrepromptsHolder"]

@@ -7,7 +7,7 @@ COLOR_CYAN=\033[1;36m
 COLOR_GREEN=\033[1;32m
 
 # Defines the targets help, install, test, lint, format, coverage, and translate as phony targets.
-.PHONY: help install run test lint format coverage test-cov test-cov-html translate label-approved
+.PHONY: help install run gptc test lint format coverage test-cov test-cov-html translate label-approved build-deb
 
 #sets the default goal to help when no target is specified on the command line.
 .DEFAULT_GOAL := help
@@ -28,6 +28,7 @@ help:
 	@echo "  install        	Will install the dependencies using UV."
 	@echo "  run <folder_name>  Runs GPT Computer on the folder with the given name."
 	@echo "                   Set MODEL default is gpt-4o (e.g., make run calculator MODEL=gemini-1.5-pro)"
+	@echo "  gptc <args>       Runs gptc CLI (e.g., make gptc -- --help)"
 	@echo "  test           	Runs the unit tests."
 	@echo "  test-cov       	Runs tests with coverage."
 	@echo "  test-cov-html  	Runs tests with coverage and generates HTML report."
@@ -36,6 +37,7 @@ help:
 	@echo "  coverage       	Generates coverage reports."
 	@echo "  translate      	Runs translation script."
 	@echo "  label-approved 	Runs GitHub PR label approval script."
+	@echo "  build-deb      	Builds Debian package (requires dpkg-deb)."
 
 # Defines a target named install. This target will install the project using UV.
 install: uv-install install-pre-commit farewell
@@ -58,6 +60,10 @@ farewell:
 run:
 	@echo -e "$(COLOR_CYAN)Running GPT Computer on $(COLOR_GREEN)$(name)$(COLOR_CYAN) folder with model $(COLOR_GREEN)$(MODEL)$(COLOR_CYAN)...$(COLOR_RESET)" && \
 	uv run gpt-computer main projects/$(name) --model $(MODEL)
+
+gptc:
+	@echo -e "$(COLOR_CYAN)Running gptc...$(COLOR_RESET)" && \
+	uv run gptc $(filter-out $@,$(MAKECMDGOALS))
 
 # Runs unit tests
 test:
@@ -101,3 +107,8 @@ translate:
 label-approved:
 	@echo -e "$(COLOR_CYAN)Running GitHub PR label approval script...$(COLOR_RESET)" && \
 	uv run python scripts/label_approved.py
+
+# Builds Debian package
+build-deb:
+	@echo -e "$(COLOR_CYAN)Building Debian package...$(COLOR_RESET)" && \
+	bash scripts/build-deb.sh

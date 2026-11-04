@@ -20,13 +20,22 @@ from __future__ import annotations
 import asyncio
 import time
 import uuid
+import warnings
 
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from gpt_computer.core.ai import AI, Message
-from gpt_computer.core.structured_logging import (
+warnings.warn(
+    "Importing from 'gpt_computer.core.ai_async' is deprecated and will be removed in version 1.0.0. "
+    "Use 'from gpt_computer.ai.client import ...' instead. "
+    "See MIGRATION_GUIDE.md for details.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+from gpt_computer.core.ai import AI, Message  # noqa: E402
+from gpt_computer.core.structured_logging import (  # noqa: E402
     CorrelationContext,
     get_logger,
     log_performance,

@@ -19,10 +19,18 @@ Classes:
 from __future__ import annotations
 
 import uuid
+import warnings
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple, Type
+
+warnings.warn(
+    "Importing from 'gpt_computer.core.orchestration.models' is deprecated and will be removed in version 1.0.0. "
+    "See MIGRATION_GUIDE.md for details.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 # A callable that produces a value, possibly asynchronously.
 AgentExecutor = Callable[..., Awaitable[Any]]

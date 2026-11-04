@@ -2,9 +2,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 from fastapi.testclient import TestClient
 
-from gpt_computer.api.main import app
-from gpt_computer.core.agent.react import ReActAgent
-from gpt_computer.core.ai import AI
+from gpt_computer.agent.react import ReActAgent
+from gpt_computer.ai.client import AI
+from gpt_computer.interfaces.api.main import app
 
 client = TestClient(app)
 
@@ -21,9 +21,10 @@ def test_run_agent(monkeypatch):
     mock_agent = MagicMock(spec=ReActAgent)
     mock_agent.run = AsyncMock(return_value="Calculated 4")
 
-    # We need to mock the classes in api.main, not core
-    monkeypatch.setattr("gpt_computer.api.main.AI", lambda **kwargs: mock_ai)
-    monkeypatch.setattr("gpt_computer.api.main.ReActAgent", lambda **kwargs: mock_agent)
+    monkeypatch.setattr("gpt_computer.interfaces.api.main.AI", lambda **kwargs: mock_ai)
+    monkeypatch.setattr(
+        "gpt_computer.interfaces.api.main.ReActAgent", lambda **kwargs: mock_agent
+    )
 
     response = client.post(
         "/agent/run", json={"prompt": "Calculate 2+2", "max_iterations": 5}

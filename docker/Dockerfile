@@ -1,29 +1,54 @@
-# Stage 1: Builder stage
-FROM python:3.11-slim AS builder
+FROM selenium/node-chrome
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  tk \
-  tcl \
-  curl \
-  git \
-  && rm -rf /var/lib/apt/lists/*
+ARG GPTC_VERSION
+ENV GPTC_VERSION $GPTC_VERSION
 
-WORKDIR /app
+ENV SE_SCREEN_WIDTH 1850
+ENV GPTC_DIR /app
+ENV GPTC_LOGIN_URL http://localhost:7900/?autoconnect=1&resize=scale&password=secret
 
-COPY . .
+USER root
 
-RUN pip install --no-cache-dir -e .
+#  If docker compose, install git
+RUN if [ "$GPTC_VERSION" = "" ] ; then \
+  apt-get -qqy update && \
+  apt-get -qqy install git \
+  ; fi
 
-# Stage 2: Final stage
-FROM python:3.11-slim
+# Install Python3, pip, remove OpenJDK 11, clean up
+RUN apt-get -qqy update \
+  && apt-get -qqy upgrade \
+  && apt-get -qyy autoremove \
+  && apt-get -qqy install python3 python-is-python3 pip ffmpeg flac libavcodec-extra \
+  && apt-get -qyy remove openjdk-11-jre-headless \
+  && apt-get -qyy autoremove \
+  && apt-get -qyy clean \
+  && rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
-WORKDIR /app
+# Update entrypoint
+COPY docker/supervisor.conf /etc/supervisor/conf.d/selenium.conf
+COPY docker/supervisor-api.conf /etc/supervisor/conf.d/api.conf
 
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
-COPY --from=builder /usr/bin /usr/bin
-COPY --from=builder /app .
+# Change background image
+COPY docker/background.png /usr/share/images/fluxbox/ubuntu-light.png
 
-COPY docker/entrypoint.sh .
+# Add user, fix permissions
+RUN chown "${SEL_UID}:${SEL_GID}" $HOME/.local
 
-ENTRYPOINT ["bash", "/app/entrypoint.sh"]
+# Switch user
+USER $SEL_UID
+
+# Set the working directory in the container.
+WORKDIR $GPTC_DIR
+
+# Copy the project's requirements file into the container.
+COPY requirements.txt $GPTC_DIR
+
+# Upgrade pip for the latest features and install the project's Python dependencies.
+RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
+
+# Copy the entire package into the container.
+ADD --chown=$SEL_UID:$SEL_GID gptc $GPTC_DIR/gptc
+
+# Expose ports
+EXPOSE 8080 7900

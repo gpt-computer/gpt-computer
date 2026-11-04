@@ -4,6 +4,8 @@ Functions for reading and writing the `gpt-computer.toml` configuration file.
 The `gpt-computer.toml` file is a TOML file that contains project-specific configuration used by the GPT Computer CLI and gptcomputer.app.
 """
 
+from __future__ import annotations
+
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -94,9 +96,9 @@ class Config:
         gptcomputer_app_dict = config_dict.get("gptcomputer-app", {})
         gptcomputer_app = None
         if gptcomputer_app_dict:
-            assert "project_id" in gptcomputer_app_dict, (
-                "project_id is required in gptcomputer-app section"
-            )
+            assert (
+                "project_id" in gptcomputer_app_dict
+            ), "project_id is required in gptcomputer-app section"
             gptcomputer_app = _GptComputerAppConfig(
                 # required if gptcomputer-app section is present
                 project_id=gptcomputer_app_dict["project_id"],

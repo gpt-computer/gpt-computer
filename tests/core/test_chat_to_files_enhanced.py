@@ -68,7 +68,8 @@ def test_parse_diffs_with_logger():
 ```
 """
     # Create a logger specific to the module under test
-    module_logger = logging.getLogger("gpt_computer.core.chat_to_files")
+    # Note: The actual logger name is gpt_computer.agent.tools.chat_to_files
+    module_logger = logging.getLogger("gpt_computer.agent.tools.chat_to_files")
 
     # Store original handlers and level
     original_handlers = list(module_logger.handlers)

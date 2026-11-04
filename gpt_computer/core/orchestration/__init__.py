@@ -25,6 +25,8 @@ Modules:
 
 from __future__ import annotations
 
+import warnings
+
 from gpt_computer.core.orchestration.agent_coordinator import (
     AgentConflictError,
     AgentCoordinator,
@@ -63,6 +65,13 @@ from gpt_computer.core.orchestration.workflow_engine import (
     WorkflowEngine,
     WorkflowExecutionError,
     create_workflow_engine,
+)
+
+warnings.warn(
+    "Importing from 'gpt_computer.core.orchestration' is deprecated and will be removed in version 1.0.0. "
+    "See MIGRATION_GUIDE.md for details.",
+    DeprecationWarning,
+    stacklevel=2,
 )
 
 __all__ = [

@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+# Remove symlink if it exists
+if [ -L /usr/local/bin/gptc ]; then
+    rm -f /usr/local/bin/gptc
+fi

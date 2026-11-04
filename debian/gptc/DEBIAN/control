@@ -1,0 +1,11 @@
+Package: gptc
+Version: 0.0.0-dev
+Section: python
+Priority: optional
+Architecture: amd64
+Essential: no
+Maintainer: hlohaus
+Description: The official gpt-computer repository
+  Various collection of powerful language models
+Depends: python3 (>= 3.9), python3-pip, python3-aiohttp, python3-requests
+Homepage: https://gptc.dev/community

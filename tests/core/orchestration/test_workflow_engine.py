@@ -514,3 +514,126 @@ async def test_fallback_to_capability_agent_without_primary(engine):
     run = await wf_engine.run_workflow(spec)
     assert run.status == WorkflowStatus.COMPLETED
     assert run.step_results["scan"] == {"ok": True}
+
+
+@pytest.mark.asyncio
+async def test_resume_skips_succeeded_steps(engine):
+    wf_engine, audit = engine
+    calls = []
+
+    async def first(task, ctx):
+        calls.append("first")
+        return {"ok": True}
+
+    async def second(task, ctx):
+        calls.append("second")
+        assert task["first"] == {"ok": True}
+        if calls.count("second") == 1:
+            raise RuntimeError("transient")
+        return {"done": True}
+
+    spec = WorkflowSpec(
+        name="resume",
+        steps=[
+            WorkflowStep("first", handler=first),
+            WorkflowStep(
+                "second",
+                handler=second,
+                depends_on=["first"],
+                retry_policy=RetryPolicy(max_attempts=1, base_delay=0.01),
+            ),
+        ],
+    )
+    run = await wf_engine.run_workflow(spec)
+    assert run.status == WorkflowStatus.FAILED
+    assert calls == ["first", "second"]
+
+    resumed = await wf_engine.resume(run)
+    assert resumed is run
+    assert run.status == WorkflowStatus.COMPLETED
+    assert calls == ["first", "second", "second"]
+    assert run.step_results == {"first": {"ok": True}, "second": {"done": True}}
+    assert run.step_executions["first"].attempts == 1
+    assert run.step_executions["second"].attempts == 2
+    events = [e.event for e in audit.entries(run_id=run.run_id)]
+    assert "workflow.resumed" in events
+
+
+@pytest.mark.asyncio
+async def test_detect_resumable_runs(engine):
+    wf_engine, _ = engine
+
+    completed = await wf_engine.run_workflow(
+        WorkflowSpec("ok", steps=[WorkflowStep("s", handler=make_executor(1))])
+    )
+
+    async def boom(task, ctx):
+        raise RuntimeError("nope")
+
+    failed = await wf_engine.run_workflow(
+        WorkflowSpec(
+            "bad",
+            steps=[
+                WorkflowStep(
+                    "s",
+                    handler=boom,
+                    retry_policy=RetryPolicy(max_attempts=1, base_delay=0.01),
+                )
+            ],
+        )
+    )
+    pending = wf_engine.create_run(
+        WorkflowSpec("pending", steps=[WorkflowStep("s", handler=make_executor(1))])
+    )
+
+    resumable_ids = {run.run_id for run in wf_engine.detect_resumable_runs()}
+    assert failed.run_id in resumable_ids
+    assert pending.run_id in resumable_ids
+    assert completed.run_id not in resumable_ids
+    assert wf_engine.metrics()["resumable"] == 2
+
+
+@pytest.mark.asyncio
+async def test_resume_completed_run_is_noop(engine):
+    wf_engine, _ = engine
+    run = await wf_engine.run_workflow(
+        WorkflowSpec("done", steps=[WorkflowStep("s", handler=make_executor(1))])
+    )
+    resumed = await wf_engine.resume(run)
+    assert resumed is run
+    assert run.status == WorkflowStatus.COMPLETED
+    assert run.step_executions["s"].attempts == 1
+
+
+@pytest.mark.asyncio
+async def test_resume_run_by_id(engine):
+    wf_engine, _ = engine
+
+    async def boom(task, ctx):
+        raise RuntimeError("first attempt")
+
+    spec = WorkflowSpec(
+        "by-id",
+        steps=[
+            WorkflowStep(
+                "s",
+                handler=boom,
+                retry_policy=RetryPolicy(max_attempts=1, base_delay=0.01),
+            )
+        ],
+    )
+    run = await wf_engine.run_workflow(spec, run_id="resumable-run")
+    assert run.status == WorkflowStatus.FAILED
+
+    spec.step("s").handler = make_executor({"ok": True})
+    resumed = await wf_engine.resume_run("resumable-run")
+    assert resumed is run
+    assert run.status == WorkflowStatus.COMPLETED
+    assert run.step_results["s"] == {"ok": True}
+
+
+@pytest.mark.asyncio
+async def test_resume_unknown_run_raises(engine):
+    wf_engine, _ = engine
+    with pytest.raises(KeyError):
+        await wf_engine.resume_run("missing")

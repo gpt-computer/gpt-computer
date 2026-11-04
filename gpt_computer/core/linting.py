@@ -1,68 +1,21 @@
-import logging
+"""
+Linting Module
 
-import black
+.. deprecated:: 0.3.0
+    Importing from 'gpt_computer.core.linting' is deprecated. Use
+    'from gpt_computer.infrastructure.linting import ...' instead.
+"""
 
-from gpt_computer.core.files_dict import FilesDict
+import warnings
 
-logger = logging.getLogger(__name__)
+warnings.warn(
+    "Importing from 'gpt_computer.core.linting' is deprecated and will be removed in version 1.0.0. "
+    "Use 'from gpt_computer.infrastructure.linting import ...' instead. "
+    "See MIGRATION_GUIDE.md for details.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
+from gpt_computer.infrastructure.linting.checker import Linting  # noqa: E402
 
-class Linting:
-    def __init__(self):
-        # Dictionary to hold linting methods for different file types
-        self.linters = {".py": self.lint_python}
-
-    import black
-
-    def lint_python(self, content, config):
-        """Lint Python files using the `black` library, handling all exceptions silently and logging them.
-        This function attempts to format the code and returns the formatted code if successful.
-        If any error occurs during formatting, it logs the error and returns the original content.
-        """
-        try:
-            # Try to format the content using black
-            linted_content = black.format_str(content, mode=black.FileMode(**config))
-        except black.NothingChanged:
-            # If nothing changed, log the info and return the original content
-            logger.info("No changes were made during formatting.")
-            linted_content = content
-        except Exception as error:
-            # If any other exception occurs, log the error and return the original content
-            logger.error(f"Could not format due to {error}")
-            linted_content = content
-        return linted_content
-
-    def lint_files(self, files_dict: FilesDict, config: dict = None) -> FilesDict:
-        """
-        Lints files based on their extension using registered linting functions.
-
-        Parameters
-        ----------
-        files_dict : FilesDict
-            The dictionary of file names to their respective source code content.
-        config : dict, optional
-            A dictionary of configuration options for the linting tools.
-
-        Returns
-        -------
-        FilesDict
-            The dictionary of file names to their respective source code content after linting.
-        """
-        if config is None:
-            config = {}
-
-        for filename, content in files_dict.items():
-            extension = filename[
-                filename.rfind(".") :
-            ].lower()  # Ensure case insensitivity
-            if extension in self.linters:
-                original_content = content
-                linted_content = self.linters[extension](content, config)
-                if linted_content != original_content:
-                    logger.info(f"Linted {filename}.")
-                else:
-                    logger.debug(f"No changes made for {filename}.")
-                files_dict[filename] = linted_content
-            else:
-                logger.debug(f"No linter registered for {filename}.")
-        return files_dict
+__all__ = ["Linting"]
