@@ -28,6 +28,7 @@ except ImportError:
     has_webview = False
 try:
     from platformdirs import user_config_dir  # noqa: F401
+
     user_config_dir  # noqa: F401
     has_platformdirs = True
 except ImportError:
