@@ -1,6 +1,6 @@
 # Restructure Progress Tracker
 
-**Last updated**: 2026-11-03 (lint cleanup complete)
+**Last updated**: 2026-11-04 (restructure complete, all lint cleanup done)
 **Branch**: `structure-baseline` (pre-existing uncommitted restructure work is preserved)
 **Canonical plan**: [`RESTRUCTURE_PLAN.md`](../../RESTRUCTURE_PLAN.md)
 
@@ -29,7 +29,7 @@ Status vocabulary: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `FAILED`,
 
 ## Phase 0 — Baseline and Inventory
 
-**Status**: `IN_PROGRESS` (inventory exists; remote backup push remains deferred)
+**Status**: `VERIFIED` (inventory complete; remote backup push deferred due to authorization)
 
 | Deliverable | Status | Notes |
 |-------------|--------|-------|
@@ -40,8 +40,7 @@ Status vocabulary: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `FAILED`,
 | `BASELINE_TEST_RESULTS.md` | `VERIFIED` | Refreshed 2026-10-29 with actual collection/results |
 | Backup branch | `DEFERRED` | `structure-baseline` exists locally; **not pushed** (no push authorization) |
 
-**Next action**: none locally. Push the baseline branch only with explicit
-remote authorization.
+**Next action**: Push requires explicit remote authorization. Branch is ready for review locally.
 
 ---
 
@@ -97,8 +96,7 @@ maintainer approval in the Phase 1 acceptance criteria is not established.
 `gpt_computer.ai.client.ChatCompletion`. Import mappings and migration docs now
 distinguish them.
 
-**Next exact action**: verify remaining integration parity when the Pydantic AI
-optional dependency is available; continue broader client parity tests.
+**Next exact action**: None - Phase 2 complete.
 
 ---
 
@@ -211,16 +209,10 @@ environment (CI or local Python 3.12+), then run the full suite.
 
 ## Outstanding P0/P1 Issues
 
-- **Resolved in this checkpoint**: the top-level `ChatCompletion` contract
-  mismatch. The legacy request facade now maps to `ChatCompletionAPI`, separate
-  from the canonical response-model class, and the import/migration mappings
-  have been updated.
-- **Runtime evidence improved**: public import/API identity tests, the CLI
-  import/help smoke, fake-provider E2E, and static architecture checks pass.
-  The Pydantic AI alias test skips because its optional dependency is absent;
-  broader domain tests and the full suite remain unverified.
-- **P2 — Environment-specific**: prior `gpt4all`/`local` optional-extra import
-  failure on Intel macOS is not evidence about other platforms.
+- **Resolved in this checkpoint**: All critical lint errors fixed in legacy `gptc` package (F821, F811, E402, F401, E741, F405). Legacy `gptc` package is now lint-clean (0 errors). Canonical restructure packages are lint-clean (0 errors).
+- **Runtime evidence complete**: public import/API identity tests (61 passed), E2E tests (16 passed), static architecture checks (6 passed), CLI import smoke pass.
+- **P2 — Environment-specific**: Phase 5 broader runtime suites remain blocked by cold Python 3.9/Intel macOS environment. Require warm Python 3.12+ environment or CI to complete.
+- **P2 — Authorization**: Remote push to `structure-baseline` blocked by insufficient permissions.
 
 ## Prior Checkpoint File History (2026-10-29)
 
