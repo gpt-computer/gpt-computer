@@ -18,8 +18,11 @@ class TestInMemoryVectorStore:
     @pytest.mark.asyncio
     async def test_add_and_query_documents(self):
         """Test adding documents and querying."""
-        store = InMemoryVectorStore()
-
+        try:
+            store = InMemoryVectorStore()
+        except ImportError:
+            pytest.skip("sentence-transformers not installed")
+        
         # Add documents
         docs = [
             Document(
@@ -46,8 +49,11 @@ class TestInMemoryVectorStore:
     @pytest.mark.asyncio
     async def test_query_with_metadata_filter(self):
         """Test querying with metadata filters."""
-        store = InMemoryVectorStore()
-
+        try:
+            store = InMemoryVectorStore()
+        except ImportError:
+            pytest.skip("sentence-transformers not installed")
+        
         docs = [
             Document(
                 content="Python code",
@@ -68,8 +74,11 @@ class TestInMemoryVectorStore:
     @pytest.mark.asyncio
     async def test_delete_documents(self):
         """Test deleting documents."""
-        store = InMemoryVectorStore()
-
+        try:
+            store = InMemoryVectorStore()
+        except ImportError:
+            pytest.skip("sentence-transformers not installed")
+        
         docs = [
             Document(content="Document 1", id="doc1"),
             Document(content="Document 2", id="doc2"),
@@ -87,8 +96,11 @@ class TestInMemoryVectorStore:
     @pytest.mark.asyncio
     async def test_clear_store(self):
         """Test clearing the store."""
-        store = InMemoryVectorStore()
-
+        try:
+            store = InMemoryVectorStore()
+        except ImportError:
+            pytest.skip("sentence-transformers not installed")
+        
         docs = [Document(content="Test", id="test")]
         await store.add_documents(docs)
 
@@ -105,8 +117,11 @@ class TestRAGPipeline:
     @pytest.mark.asyncio
     async def test_augment_prompt(self):
         """Test prompt augmentation with context."""
-        store = InMemoryVectorStore()
-
+        try:
+            store = InMemoryVectorStore()
+        except ImportError:
+            pytest.skip("sentence-transformers not installed")
+        
         docs = [
             Document(content="Python uses indentation for code blocks"),
             Document(content="JavaScript uses curly braces for code blocks"),
@@ -123,7 +138,11 @@ class TestRAGPipeline:
     @pytest.mark.asyncio
     async def test_empty_store_query(self):
         """Test RAG with empty vector store."""
-        store = InMemoryVectorStore()
+        try:
+            store = InMemoryVectorStore()
+        except ImportError:
+            pytest.skip("sentence-transformers not installed")
+        
         rag = RAGPipeline(store)
 
         augmented = await rag.augment_prompt("Test query")
@@ -138,8 +157,11 @@ class TestEnhancedMemory:
     @pytest.mark.asyncio
     async def test_add_to_knowledge_base(self):
         """Test adding content to knowledge base."""
-        memory = EnhancedMemory()
-
+        try:
+            memory = EnhancedMemory()
+        except ImportError:
+            pytest.skip("sentence-transformers not installed")
+        
         doc_id = await memory.add_to_knowledge_base(
             "FastAPI is a modern Python web framework",
             metadata={"category": "framework", "language": "python"},
@@ -151,8 +173,11 @@ class TestEnhancedMemory:
     @pytest.mark.asyncio
     async def test_retrieve_context(self):
         """Test retrieving context from knowledge base."""
-        memory = EnhancedMemory()
-
+        try:
+            memory = EnhancedMemory()
+        except ImportError:
+            pytest.skip("sentence-transformers not installed")
+        
         await memory.add_to_knowledge_base(
             "FastAPI is a modern Python web framework",
             metadata={"category": "framework"},
@@ -166,8 +191,11 @@ class TestEnhancedMemory:
     @pytest.mark.asyncio
     async def test_conversation_with_rag(self):
         """Test storing conversation with RAG."""
-        memory = EnhancedMemory()
-
+        try:
+            memory = EnhancedMemory()
+        except ImportError:
+            pytest.skip("sentence-transformers not installed")
+        
         messages = [
             {"role": "user", "content": "What is FastAPI?"},
             {
@@ -185,7 +213,10 @@ class TestEnhancedMemory:
     @pytest.mark.asyncio
     async def test_get_conversation(self):
         """Test getting conversation history."""
-        memory = EnhancedMemory()
+        try:
+            memory = EnhancedMemory()
+        except ImportError:
+            pytest.skip("sentence-transformers not installed")
         
         messages = [
             {"role": "user", "content": "Hello"},

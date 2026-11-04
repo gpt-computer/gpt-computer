@@ -108,12 +108,19 @@ class InMemoryVectorStore(VectorStoreBackend):
         doc_embeddings = self._compute_embeddings()
 
         # Compute cosine similarity
-        from sklearn.metrics.pairwise import cosine_similarity
-        import numpy as np
+        try:
+            from sklearn.metrics.pairwise import cosine_similarity
+            import numpy as np
 
-        query_vec = np.array(query_embedding).reshape(1, -1)
-        doc_vecs = np.array(doc_embeddings)
-        similarities = cosine_similarity(query_vec, doc_vecs)[0]
+            query_vec = np.array(query_embedding).reshape(1, -1)
+            doc_vecs = np.array(doc_embeddings)
+            similarities = cosine_similarity(query_vec, doc_vecs)[0]
+        except ImportError:
+            # Fallback to simple dot product if sklearn not available
+            import numpy as np
+            query_vec = np.array(query_embedding)
+            doc_vecs = np.array(doc_embeddings)
+            similarities = np.dot(doc_vecs, query_vec)
 
         # Filter by metadata if provided
         filtered_indices = list(range(len(self._documents)))
