@@ -96,7 +96,9 @@ def _migrate_secret_dir(old_secret_ws: Path, new_secret_ws: Path) -> None:
         return
     new_secret_ws.mkdir(parents=True, exist_ok=True)
     for item in old_secret_ws.iterdir():
-        target = new_secret_ws / item.name
+        # Sanitize filename to prevent path injection
+        safe_name = secure_filename(item.name)
+        target = new_secret_ws / safe_name
         if target.exists():
             continue
         item.rename(target)
@@ -164,19 +166,24 @@ def resolve_workspace_path(
     resolved path to use and *workspace_root* is the workspace root that
     contains it (used for containment checks).
     """
+    # Sanitize the relative path to prevent path injection
+    safe_rel_path = secure_filename(rel_path)
+    # Replace dots with underscores to prevent directory traversal
+    safe_rel_path = safe_rel_path.replace(".", "_")
+    
     root = get_workspace_dir().resolve()
     if workspace_secret and user_id:
         user_ws = get_secret_workspace_dir(user_id).resolve()
-        target = (user_ws / rel_path).resolve()
+        target = (user_ws / safe_rel_path).resolve()
         if for_write:
             return target, user_ws
         # Read: check secret workspace first, fall back to root
         if target.exists():
             return target, user_ws
         # Fall back to root workspace
-        target = (root / rel_path).resolve()
+        target = (root / safe_rel_path).resolve()
         return target, root
-    target = (root / rel_path).resolve()
+    target = (root / safe_rel_path).resolve()
     return target, root
 
 
