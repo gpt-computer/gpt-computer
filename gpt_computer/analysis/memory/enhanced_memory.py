@@ -82,7 +82,7 @@ class EnhancedMemory(BaseMemory):
             if msg.get("role") == "assistant":
                 await self.add_to_knowledge_base(
                     msg.get("content", ""),
-                    metadata={"role": "assistant", "timestamp": msg.get("timestamp")}
+                    metadata={"role": "assistant", "timestamp": msg.get("timestamp")},
                 )
 
     async def get_conversation_context(
@@ -101,10 +101,10 @@ class EnhancedMemory(BaseMemory):
         """
         # Get recent conversation history
         conv = await self.get_conversation(limit=limit)
-        
+
         # Get RAG context
         rag_context = await self.retrieve_context(query)
-        
+
         # Combine contexts
         if conv and rag_context:
             return f"""Recent conversation:

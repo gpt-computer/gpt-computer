@@ -33,6 +33,7 @@ class InMemoryVectorStore(VectorStoreBackend):
         if self._model is None:
             try:
                 from sentence_transformers import SentenceTransformer
+
                 self._model = SentenceTransformer(self.model_name)
             except ImportError:
                 raise ImportError(
@@ -66,9 +67,9 @@ class InMemoryVectorStore(VectorStoreBackend):
             # Generate unique ID if not provided
             if doc.id is None:
                 doc.id = f"doc_{len(self._documents)}_{hash(doc.content)}"
-            
+
             self._documents.append(doc)
-        
+
         # Invalidate cached embeddings
         self._embeddings = None
 
@@ -102,7 +103,7 @@ class InMemoryVectorStore(VectorStoreBackend):
 
         # Compute query embedding
         query_embedding = self._get_embedding(query)
-        
+
         # Compute document embeddings
         doc_embeddings = self._compute_embeddings()
 
@@ -118,7 +119,8 @@ class InMemoryVectorStore(VectorStoreBackend):
         filtered_indices = list(range(len(self._documents)))
         if filter_metadata:
             filtered_indices = [
-                i for i, doc in enumerate(self._documents)
+                i
+                for i, doc in enumerate(self._documents)
                 if self._matches_metadata(doc.metadata, filter_metadata)
             ]
 
@@ -126,26 +128,26 @@ class InMemoryVectorStore(VectorStoreBackend):
         top_indices = sorted(
             [(i, similarities[i]) for i in filtered_indices],
             key=lambda x: x[1],
-            reverse=True
+            reverse=True,
         )[:top_k]
 
         # Build results
         results = []
         for idx, score in top_indices:
             doc = self._documents[idx]
-            results.append(QueryResult(
-                content=doc.content,
-                score=float(score),
-                metadata=doc.metadata,
-                id=doc.id
-            ))
+            results.append(
+                QueryResult(
+                    content=doc.content,
+                    score=float(score),
+                    metadata=doc.metadata,
+                    id=doc.id,
+                )
+            )
 
         return results
 
     def _matches_metadata(
-        self,
-        doc_metadata: Optional[Dict[str, Any]],
-        filter_metadata: Dict[str, Any]
+        self, doc_metadata: Optional[Dict[str, Any]], filter_metadata: Dict[str, Any]
     ) -> bool:
         """Check if document metadata matches filter.
 
@@ -191,14 +193,10 @@ class InMemoryVectorStore(VectorStoreBackend):
             path: Path to save directory
         """
         path.mkdir(parents=True, exist_ok=True)
-        
+
         # Save documents
         docs_data = [
-            {
-                "content": doc.content,
-                "metadata": doc.metadata,
-                "id": doc.id
-            }
+            {"content": doc.content, "metadata": doc.metadata, "id": doc.id}
             for doc in self._documents
         ]
         (path / "documents.json").write_text(json.dumps(docs_data), encoding="utf-8")
@@ -218,7 +216,7 @@ class InMemoryVectorStore(VectorStoreBackend):
             Document(
                 content=item["content"],
                 metadata=item.get("metadata"),
-                id=item.get("id")
+                id=item.get("id"),
             )
             for item in docs_data
         ]

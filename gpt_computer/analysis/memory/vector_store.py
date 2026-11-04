@@ -14,6 +14,7 @@ from dataclasses import dataclass
 @dataclass
 class Document:
     """A document with content and optional metadata."""
+
     content: str
     metadata: Optional[Dict[str, Any]] = None
     id: Optional[str] = None
@@ -22,6 +23,7 @@ class Document:
 @dataclass
 class QueryResult:
     """Result from a vector store query."""
+
     content: str
     score: float
     metadata: Optional[Dict[str, Any]] = None
@@ -106,10 +108,7 @@ class RAGPipeline:
             Augmented prompt with context from knowledge base
         """
         # Retrieve relevant documents
-        results = await self.vector_store.query(
-            prompt,
-            top_k=self.context_documents
-        )
+        results = await self.vector_store.query(prompt, top_k=self.context_documents)
 
         if not results:
             return prompt
